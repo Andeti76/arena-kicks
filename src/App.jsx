@@ -5,8 +5,9 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import LoginPage        from './pages/LoginPage'
 import AcceptInvitePage from './pages/AcceptInvitePage'
 import DashboardPage    from './pages/DashboardPage'
-import TransactionsPage from './pages/TransactionsPage'
-import EscolinhaPage    from './pages/EscolinhaPage'
+import ConciliacaoPage  from './pages/ConciliacaoPage'
+import DespesasPage     from './pages/DespesasPage'
+import EventosPage      from './pages/EventosPage'
 import DREPage          from './pages/DREPage'
 import SettingsPage     from './pages/SettingsPage'
 
@@ -15,7 +16,11 @@ import AppLayout from './components/layout/AppLayout'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="flex h-screen items-center justify-center text-kicks-navy">Carregando...</div>
+  if (loading) return (
+    <div className="flex h-screen items-center justify-center bg-kicks-navy">
+      <div className="text-white text-sm opacity-60">Carregando...</div>
+    </div>
+  )
   return user ? children : <Navigate to="/login" replace />
 }
 
@@ -40,8 +45,9 @@ export default function App() {
           <PrivateRoute><AppLayout /></PrivateRoute>
         }>
           <Route index element={<DashboardPage />} />
-          <Route path="lancamentos" element={<TransactionsPage />} />
-          <Route path="escolinha/*" element={<EscolinhaPage />} />
+          <Route path="conciliacao" element={<ConciliacaoPage />} />
+          <Route path="despesas" element={<DespesasPage />} />
+          <Route path="eventos" element={<EventosPage />} />
           <Route path="dre" element={<DREPage />} />
           <Route path="configuracoes" element={<SettingsPage />} />
         </Route>

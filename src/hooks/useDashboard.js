@@ -1,111 +1,114 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
+// ─── Helper ──────────────────────────────────────────────────────────────────
+function fmt(date) { return date.toISOString().split('T')[0] }
+
+function getMonthRange(offset = 0) {
+  const now   = new Date()
+  const year  = now.getFullYear()
+  const month = now.getMonth() + offset
+  const start = fmt(new Date(year, month, 1))
+  const end   = fmt(new Date(year, month + 1, 0))
+  return { start, end }
+}
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 export function useDashboard(period = 'month') {
-  const [data,    setData]    = useState([])
+  const [data,    setData]    = useState(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
 
-  useEffect(() => {
-    load()
-  }, [period])
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const { start, end, prevStart, prevEnd } = getDateRange(period)
+      const today = fmt(new Date())
+      const { start, end } = period === 'day'
+        ? { start: today, end: today }
+        : getMonthRange(0)
 
-      // Busca centros de custo
-      const { data: costCenters, error: ccError } = await supabase
+      // ── 1. Centros de custo
+      const { data: costCenters, error: ccErr } = await supabase
         .from('cost_centers')
         .select('id, name, code')
         .eq('is_active', true)
         .order('sort_order')
+      if (ccErr) throw ccErr
 
-      if (ccError) throw ccError
+      // ── 2. Relatórios diários do período (receita)
+      const { data: reports, error: drErr } = await supabase
+        .from('daily_reports')
+        .select('cost_center_id, sys_total, maq_total, status, report_date')
+        .gte('report_date', start)
+        .lte('report_date', end)
+      if (drErr) throw drErr
 
-      // Busca transações do período atual
-      const { data: current, error: txError } = await supabase
-        .from('transactions')
-        .select('cost_center_id, type, amount, is_general')
-        .eq('status', 'confirmed')
-        .gte('date', start)
-        .lte('date', end)
+      // ── 3. Despesas do período
+      const { data: expenses, error: expErr } = await supabase
+        .from('expenses')
+        .select('cost_center_id, amount, is_general')
+        .gte('expense_date', start)
+        .lte('expense_date', end)
+      if (expErr) throw expErr
 
-      if (txError) throw txError
+      // ── 4. Rateio de despesas gerais
+      const generalExpenseIds = (expenses ?? [])
+        .filter(e => e.is_general)
+        .map(e => e.id)
+        .filter(Boolean)
 
-      // Busca transações do período anterior (comparativo)
-      const { data: previous, error: prevError } = await supabase
-        .from('transactions')
-        .select('cost_center_id, type, amount, is_general')
-        .eq('status', 'confirmed')
-        .gte('date', prevStart)
-        .lte('date', prevEnd)
+      let allocations = []
+      if (generalExpenseIds.length > 0) {
+        const { data: allocs } = await supabase
+          .from('expense_allocations')
+          .select('cost_center_id, amount, expense_id')
+          .in('expense_id', generalExpenseIds)
+        allocations = allocs ?? []
+      }
 
-      if (prevError) throw prevError
+      // ── 5. Status de hoje por área
+      const todayReports = (reports ?? []).filter(r => r.report_date === today)
 
-      // Busca rateio das despesas gerais do período atual
-      const { data: allocations, error: allocError } = await supabase
-        .from('transaction_allocations')
-        .select(`
-          cost_center_id,
-          amount,
-          transactions!inner(date, status, is_general)
-        `)
-        .eq('transactions.status', 'confirmed')
-        .eq('transactions.is_general', true)
-        .gte('transactions.date', start)
-        .lte('transactions.date', end)
+      // ── 6. Monta cards
+      const cards = (costCenters ?? []).map(cc => {
+        const ccReports  = (reports  ?? []).filter(r => r.cost_center_id === cc.id)
+        const ccExpenses = (expenses ?? []).filter(e => e.cost_center_id === cc.id && !e.is_general)
+        const ccAllocs   = allocations.filter(a => a.cost_center_id === cc.id)
 
-      if (allocError) throw allocError
+        const income  = ccReports .reduce((s, r) => s + Number(r.sys_total  ?? 0), 0)
+        const expense = ccExpenses.reduce((s, e) => s + Number(e.amount     ?? 0), 0)
+                      + ccAllocs  .reduce((s, a) => s + Number(a.amount     ?? 0), 0)
 
-      // Monta os cards por CC
-      const cards = costCenters.map(cc => {
-        const currIncome  = sumBy(current,  cc.id, 'income')
-        const currExpense = sumBy(current,  cc.id, 'expense')
-        const prevIncome  = sumBy(previous, cc.id, 'income')
-        const prevExpense = sumBy(previous, cc.id, 'expense')
-
-        // Adiciona rateio de despesas gerais
-        const allocExpense = (allocations || [])
-          .filter(a => a.cost_center_id === cc.id)
-          .reduce((sum, a) => sum + Number(a.amount), 0)
-
-        const totalExpense = currExpense + allocExpense
-        const prevTotal    = prevExpense
+        const todayReport = todayReports.find(r => r.cost_center_id === cc.id)
+        const statusToday = todayReport?.status ?? 'pending'
 
         return {
-          id:           cc.id,
-          name:         cc.name,
-          code:         cc.code,
-          income:       currIncome,
-          expense:      totalExpense,
-          result:       currIncome - totalExpense,
-          prevIncome:   prevIncome,
-          prevExpense:  prevTotal,
-          prevResult:   prevIncome - prevTotal,
+          id:         cc.id,
+          name:       cc.name,
+          code:       cc.code,
+          income,
+          expense,
+          result:     income - expense,
+          statusToday,
+          okCount:    ccReports.filter(r => r.status === 'ok').length,
+          discCount:  ccReports.filter(r => r.status === 'discrepancy').length,
+          totalDays:  ccReports.length,
         }
       })
 
-      // Consolidado da org (despesas gerais sem rateio + soma dos CCs)
-      const generalExpense = (current || [])
-        .filter(t => t.is_general)
-        .reduce((sum, t) => sum + Number(t.amount), 0)
+      const totalIncome  = cards.reduce((s, c) => s + c.income,  0)
+      const totalExpense = cards.reduce((s, c) => s + c.expense, 0)
 
       const consolidated = {
-        id:      'consolidated',
-        name:    'Arena Kicks (Consolidado)',
-        code:    'ALL',
-        income:  cards.reduce((s, c) => s + c.income,  0),
-        expense: cards.reduce((s, c) => s + c.expense, 0) + generalExpense,
-        result:  0,
-        prevIncome:  cards.reduce((s, c) => s + c.prevIncome,  0),
-        prevExpense: cards.reduce((s, c) => s + c.prevExpense, 0),
-        prevResult:  0,
+        id:         'consolidated',
+        name:       'Arena Kicks (Consolidado)',
+        code:       'ALL',
+        income:     totalIncome,
+        expense:    totalExpense,
+        result:     totalIncome - totalExpense,
+        statusToday: null,
       }
-      consolidated.result     = consolidated.income  - consolidated.expense
-      consolidated.prevResult = consolidated.prevIncome - consolidated.prevExpense
 
       setData({ cards, consolidated, period, start, end })
     } catch (err) {
@@ -113,39 +116,9 @@ export function useDashboard(period = 'month') {
     } finally {
       setLoading(false)
     }
-  }
+  }, [period])
+
+  useEffect(() => { load() }, [load])
 
   return { data, loading, error, reload: load }
-}
-
-// Soma transações por CC e tipo
-function sumBy(transactions, ccId, type) {
-  return (transactions || [])
-    .filter(t => t.cost_center_id === ccId && t.type === type && !t.is_general)
-    .reduce((sum, t) => sum + Number(t.amount), 0)
-}
-
-// Calcula intervalos de datas
-function getDateRange(period) {
-  const now   = new Date()
-  const year  = now.getFullYear()
-  const month = now.getMonth()
-  const day   = now.getDate()
-
-  if (period === 'day') {
-    const today = fmt(now)
-    const yesterday = fmt(new Date(year, month, day - 1))
-    return { start: today, end: today, prevStart: yesterday, prevEnd: yesterday }
-  }
-
-  // month (padrão)
-  const start    = fmt(new Date(year, month, 1))
-  const end      = fmt(new Date(year, month + 1, 0))
-  const prevStart = fmt(new Date(year, month - 1, 1))
-  const prevEnd   = fmt(new Date(year, month, 0))
-  return { start, end, prevStart, prevEnd }
-}
-
-function fmt(date) {
-  return date.toISOString().split('T')[0]
 }

@@ -6,13 +6,16 @@ const CC_COLORS = {
   ALL: { bg: 'bg-gray-50',   border: 'border-kicks-navy', icon: '🏆' },
 }
 
+const STATUS_CONFIG = {
+  ok:          { icon: '✅', label: 'Hoje OK',       cls: 'bg-green-100 text-green-700' },
+  discrepancy: { icon: '⚠️', label: 'Divergência',   cls: 'bg-red-100 text-red-600' },
+  pending:     { icon: '🕐', label: 'Pendente',      cls: 'bg-yellow-100 text-yellow-700' },
+}
+
 export default function CCCard({ cc }) {
-  const colors  = CC_COLORS[cc.code] || CC_COLORS.ALL
+  const colors   = CC_COLORS[cc.code] || CC_COLORS.ALL
   const isProfit = cc.result >= 0
-  const diffResult = cc.result - cc.prevResult
-  const diffPct    = cc.prevResult !== 0
-    ? ((diffResult / Math.abs(cc.prevResult)) * 100).toFixed(1)
-    : null
+  const status   = cc.statusToday ? STATUS_CONFIG[cc.statusToday] : null
 
   return (
     <div className={`rounded-xl border-l-4 ${colors.border} ${colors.bg} p-5 shadow-sm`}>
@@ -22,21 +25,17 @@ export default function CCCard({ cc }) {
           <span className="text-2xl">{colors.icon}</span>
           <h3 className="font-semibold text-gray-800 text-sm">{cc.name}</h3>
         </div>
-        {diffPct !== null && (
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-            diffResult >= 0
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
-          }`}>
-            {diffResult >= 0 ? '▲' : '▼'} {Math.abs(diffPct)}%
+        {status && (
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${status.cls}`}>
+            {status.icon} {status.label}
           </span>
         )}
       </div>
 
       {/* Valores */}
       <div className="space-y-2">
-        <Row label="Receita"  value={cc.income}  color="text-green-600" />
-        <Row label="Despesa"  value={cc.expense} color="text-red-500"   />
+        <Row label="Receita" value={cc.income}  color="text-green-600" />
+        <Row label="Despesa" value={cc.expense} color="text-red-500"   />
         <div className="border-t border-gray-200 pt-2 mt-2">
           <div className="flex justify-between items-center">
             <span className="text-sm font-semibold text-gray-700">Resultado</span>
@@ -47,14 +46,19 @@ export default function CCCard({ cc }) {
         </div>
       </div>
 
-      {/* Comparativo período anterior */}
-      <div className="mt-3 pt-3 border-t border-gray-200">
-        <p className="text-xs text-gray-400">
-          Período anterior: <span className={cc.prevResult >= 0 ? 'text-green-500' : 'text-red-400'}>
-            {cc.prevResult >= 0 ? '+' : ''}{fmt(cc.prevResult)}
+      {/* Status de conciliações do mês */}
+      {cc.totalDays > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-200 flex gap-3">
+          <span className="text-xs text-gray-400">
+            ✅ {cc.okCount}/{cc.totalDays} dias
           </span>
-        </p>
-      </div>
+          {cc.discCount > 0 && (
+            <span className="text-xs text-red-400">
+              ⚠️ {cc.discCount} divergência{cc.discCount > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -73,5 +77,5 @@ function fmt(value) {
     style: 'currency',
     currency: 'BRL',
     minimumFractionDigits: 2,
-  }).format(value)
+  }).format(value ?? 0)
 }

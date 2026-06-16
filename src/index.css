@@ -12,10 +12,12 @@
 }
 
 @layer components {
-  .input {
+  .input,
+  .input-field {
     @apply w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-kicks-navy focus:border-transparent transition-shadow;
   }
-  .label {
+  .label,
+  .label-field {
     @apply block text-xs font-medium text-gray-600 mb-1;
   }
   .btn-primary {
