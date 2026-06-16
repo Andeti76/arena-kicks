@@ -7,97 +7,219 @@ const PERIODS = [
   { value: 'month', label: 'Este mês' },
 ]
 
-export default function DashboardPage() {
-  const [period, setPeriod] = useState('month')
-  const { data, loading, error, reload } = useDashboard(period)
-
-  return (
-    <div>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-kicks-navy">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Visão geral dos centros de custo
-          </p>
-        </div>
-
-        {/* Filtro de período */}
-        <div className="flex gap-2">
-          {PERIODS.map(p => (
-            <button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                period === p.value
-                  ? 'bg-kicks-navy text-white'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:border-kicks-navy'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-          <button
-            onClick={reload}
-            className="px-3 py-2 rounded-lg text-sm text-gray-500 border border-gray-200 hover:border-kicks-navy transition-colors"
-            title="Atualizar"
-          >
-            ↻
-          </button>
-        </div>
-      </div>
-
-      {/* Estados */}
-      {loading && (
-        <div className="flex items-center justify-center py-20 text-gray-400">
-          Carregando...
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg p-4 text-sm">
-          Erro ao carregar dados: {error}
-        </div>
-      )}
-
-      {!loading && !error && data?.cards && (
-        <>
-          {/* Cards dos centros de custo */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
-            {data.cards.map(cc => (
-              <CCCard key={cc.id} cc={cc} />
-            ))}
-          </div>
-
-          {/* Card consolidado */}
-          <div className="grid grid-cols-1">
-            <CCCard cc={data.consolidated} />
-          </div>
-
-          {/* Rodapé */}
-          <p className="text-xs text-gray-400 mt-4 text-right">
-            {period === 'day'
-              ? `Hoje — ${fmtDate(data.start)}`
-              : `${fmtDate(data.start)} a ${fmtDate(data.end)}`
-            }
-          </p>
-        </>
-      )}
-
-      {/* Estado vazio */}
-      {!loading && !error && data?.cards?.length === 0 && (
-        <div className="text-center py-20 text-gray-400">
-          <p className="text-4xl mb-3">📊</p>
-          <p className="font-medium">Nenhum dado encontrado</p>
-          <p className="text-sm">Comece adicionando lançamentos nos centros de custo.</p>
-        </div>
-      )}
-    </div>
-  )
+function fmt(v) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 }).format(v ?? 0)
 }
 
 function fmtDate(dateStr) {
   if (!dateStr) return ''
   const [y, m, d] = dateStr.split('-')
   return `${d}/${m}/${y}`
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+function Skeleton() {
+  return (
+    <div style={{ animation: 'pulse 1.5s ease-in-out infinite' }}>
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }`}</style>
+      {/* Hero skeleton */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px', marginBottom: '32px' }}>
+        {[1,2,3,4].map(i => (
+          <div key={i} style={{ height: '96px', borderRadius: '20px', background: '#e5e7eb' }} />
+        ))}
+      </div>
+      {/* Cards skeleton */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '16px' }}>
+        {[1,2,3,4].map(i => (
+          <div key={i} style={{ height: '160px', borderRadius: '20px', background: '#e5e7eb' }} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── KPI Box ───────────────────────────────────────────────────────────────────
+function KpiBox({ label, value, color, icon, sub }) {
+  return (
+    <div style={{
+      background: 'white',
+      borderRadius: '20px',
+      padding: '20px',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '6px',
+      borderTop: `3px solid ${color}`,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+          {label}
+        </span>
+        <span style={{ fontSize: '20px' }}>{icon}</span>
+      </div>
+      <p style={{ fontSize: '22px', fontWeight: 800, color, letterSpacing: '-0.5px', lineHeight: 1 }}>
+        {value}
+      </p>
+      {sub && (
+        <p style={{ fontSize: '11px', color: '#9ca3af' }}>{sub}</p>
+      )}
+    </div>
+  )
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+export default function DashboardPage() {
+  const [period, setPeriod] = useState('month')
+  const { data, loading, error, reload } = useDashboard(period)
+
+  const consolidated = data?.consolidated
+  const cards        = data?.cards ?? []
+  const pendingCount = cards.filter(c => c.statusToday === 'pending').length
+  const discCount    = cards.filter(c => c.statusToday === 'discrepancy').length
+
+  const periodLabel = period === 'day'
+    ? `Hoje — ${fmtDate(data?.start)}`
+    : data ? `${fmtDate(data.start)} a ${fmtDate(data.end)}` : ''
+
+  return (
+    <div>
+      {/* ── Header ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div>
+          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0B2238', letterSpacing: '-0.5px' }}>
+            Arena Kicks — Painel
+          </h1>
+          <p style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
+            {periodLabel || 'Carregando período...'}
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {PERIODS.map(p => (
+            <button
+              key={p.value}
+              onClick={() => setPeriod(p.value)}
+              className={period === p.value ? 'tab-btn tab-btn-active' : 'tab-btn tab-btn-inactive'}
+            >
+              {p.label}
+            </button>
+          ))}
+          <button
+            onClick={reload}
+            title="Atualizar"
+            style={{
+              width: '36px', height: '36px',
+              borderRadius: '10px',
+              border: '1px solid #e5e7eb',
+              background: 'white',
+              fontSize: '16px',
+              cursor: 'pointer',
+              color: '#6b7280',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'border-color 0.15s, color 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#0B2238'; e.currentTarget.style.color = '#0B2238' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = '#6b7280' }}
+          >
+            ↻
+          </button>
+        </div>
+      </div>
+
+      {/* ── Loading ── */}
+      {loading && <Skeleton />}
+
+      {/* ── Erro ── */}
+      {error && (
+        <div style={{
+          background: '#fef2f2', border: '1px solid #fecaca',
+          borderRadius: '12px', padding: '16px',
+          color: '#dc2626', fontSize: '14px',
+        }}>
+          ⚠️ Erro ao carregar: {error}
+        </div>
+      )}
+
+      {/* ── Conteúdo ── */}
+      {!loading && !error && data && (
+        <>
+          {/* ── Hero: 4 KPIs ── */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '12px',
+            marginBottom: '24px',
+          }}
+          className="sm:grid-cols-4"
+          >
+            <KpiBox
+              label="Receita"
+              value={fmt(consolidated?.income)}
+              color="#059669"
+              icon="💰"
+              sub={period === 'month' ? 'no mês' : 'hoje'}
+            />
+            <KpiBox
+              label="Despesa"
+              value={fmt(consolidated?.expense)}
+              color="#dc2626"
+              icon="📤"
+              sub={period === 'month' ? 'no mês' : 'hoje'}
+            />
+            <KpiBox
+              label="Resultado"
+              value={fmt(consolidated?.result)}
+              color={consolidated?.result >= 0 ? '#059669' : '#dc2626'}
+              icon={consolidated?.result >= 0 ? '📈' : '📉'}
+              sub="receita − despesa"
+            />
+            <KpiBox
+              label="Atenção"
+              value={discCount > 0 ? `${discCount} área${discCount > 1 ? 's' : ''}` : pendingCount > 0 ? `${pendingCount} pend.` : 'Tudo OK'}
+              color={discCount > 0 ? '#ef4444' : pendingCount > 0 ? '#f59e0b' : '#059669'}
+              icon={discCount > 0 ? '⚠️' : pendingCount > 0 ? '🕐' : '✅'}
+              sub={discCount > 0 ? 'com divergência' : pendingCount > 0 ? 'sem conciliação' : 'conciliado'}
+            />
+          </div>
+
+          {/* ── Divisor ── */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '1px', whiteSpace: 'nowrap' }}>
+              Por área
+            </span>
+            <div style={{ flex: 1, height: '1px', background: '#f3f4f6' }} />
+          </div>
+
+          {/* ── Cards por CC ── */}
+          {cards.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: '#9ca3af' }}>
+              <p style={{ fontSize: '40px', marginBottom: '12px' }}>📊</p>
+              <p style={{ fontWeight: 600, color: '#6b7280' }}>Nenhum dado encontrado</p>
+              <p style={{ fontSize: '13px', marginTop: '4px' }}>Comece lançando conciliações e despesas.</p>
+            </div>
+          ) : (
+            <>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(1, 1fr)',
+                gap: '12px',
+                marginBottom: '12px',
+              }}
+              className="sm:grid-cols-2 xl:grid-cols-4"
+              >
+                {cards.map(cc => (
+                  <CCCard key={cc.id} cc={cc} />
+                ))}
+              </div>
+
+              {/* ── Consolidado ── */}
+              <div style={{ marginTop: '4px' }}>
+                <CCCard cc={consolidated} highlight />
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  )
 }
