@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Arena Kicks — Conciliação</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F3F5F7; color: #17212B; min-height: 100vh; }
+
+:root {
+  --navy:      #123653;
+  --navy-dark: #0B2238;
+  --gold:      #C99A2E;
+  --gold-soft: #F4E5BF;
+  --bg:        #F3F5F7;
+  --card:      #FFFFFF;
+  --text:      #17212B;
+  --muted:     #6B7280;
+  --green:     #16A34A;
+  --red:       #DC2626;
+  --amber:     #CA8A04;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; flex-direction: column; min-height: 100vh; }
+.screen.active { display: flex; }
+
+/* ── DEMO BANNER ── */
+.demo-banner {
+  background: var(--gold);
+  color: var(--navy-dark);
+  text-align: center;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 5px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+/* ── TOP BAR ── */
+.topbar {
+  background: linear-gradient(135deg, var(--navy-dark), var(--navy));
+  border-bottom: 3px solid var(--gold);
+  color: white;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.topbar-logo {
+  width: 38px; height: 38px;
+  object-fit: contain; flex-shrink: 0;
+}
+.topbar-logo-mark {
+  width: 38px; height: 38px; flex-shrink: 0;
+}
+.topbar h1 { font-size: 17px; font-weight: 700; flex: 1; letter-spacing: 0.3px; }
+.topbar .subtitle { font-size: 11px; opacity: 0.55; margin-top: 1px; letter-spacing: 0.5px; }
+.back { font-size: 22px; cursor: pointer; opacity: 0.75; line-height: 1; padding-right: 4px; }
+
+/* ── CONTENT ── */
+.content { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+/* ── MONTH BAR ── */
+.month-bar {
+  background: var(--card); border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(11,34,56,.07);
+  padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  border: 1px solid #E2E8F0;
+}
+.month-bar .chevron { font-size: 20px; cursor: pointer; color: var(--navy); padding: 2px 8px; opacity: 0.6; }
+.month-bar .month-label { font-weight: 700; font-size: 15px; color: var(--navy); }
+
+/* ── KPI GRID ── */
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.kpi-card {
+  background: var(--card); border-radius: 14px;
+  padding: 14px 14px 12px;
+  box-shadow: 0 2px 8px rgba(11,34,56,.07);
+  border: 1px solid #E2E8F0;
+  border-top: 4px solid #E2E8F0;
+}
+.kpi-card.k-green  { border-top-color: var(--green); }
+.kpi-card.k-red    { border-top-color: var(--red); }
+.kpi-card.k-navy   { border-top-color: var(--navy); }
+.kpi-card.k-amber  { border-top-color: var(--amber); }
+.kpi-label { font-size: 11px; color: var(--muted); margin-bottom: 5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; }
+.kpi-value { font-size: 18px; font-weight: 800; line-height: 1; }
+.kpi-value.green { color: var(--green); }
+.kpi-value.red   { color: var(--red); }
+.kpi-value.navy  { color: var(--navy); }
+.kpi-value.amber { color: var(--amber); }
+
+/* ── SECTION LABEL ── */
+.section-label {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 0 2px;
+}
+
+/* ── ÁREA CARDS ── */
+.area-card {
+  background: var(--card); border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(11,34,56,.07);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer;
+  border: 1px solid #E2E8F0;
+  border-left: 5px solid var(--gold);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.area-card:active { transform: scale(0.98); box-shadow: 0 1px 4px rgba(11,34,56,.1); }
+.area-card.warning { border-left-color: var(--amber); background: linear-gradient(90deg, #FFFBEB, #FFFFFF); }
+.area-card.ok      { border-left-color: var(--green); }
+.area-card.pending { border-left-color: #D1D5DB; }
+
+.area-icon {
+  width: 42px; height: 42px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.area-icon.bar  { background: #FEF3C7; }
+.area-icon.esc  { background: #DBEAFE; }
+.area-icon.soc  { background: #DCFCE7; }
+.area-icon.est  { background: #F3E8FF; }
+.area-icon svg  { width: 22px; height: 22px; }
+
+.area-info { flex: 1; }
+.area-info h2 { font-size: 15px; font-weight: 700; color: var(--text); }
+.area-info p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.area-badge {
+  font-size: 11px; font-weight: 700; padding: 4px 10px;
+  border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+}
+.badge-ok      { background: #DCFCE7; color: #166534; }
+.badge-warn    { background: #FEF3C7; color: #92400E; }
+.badge-pending { background: #F3F4F6; color: var(--muted); }
+
+/* ── CARD ── */
+.card {
+  background: var(--card); border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(11,34,56,.07);
+  border: 1px solid #E2E8F0;
+  overflow: hidden;
+}
+.card-header {
+  padding: 13px 16px 10px;
+  border-bottom: 1px solid #F0F0F0;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-header h3 { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+.card-header svg { width: 16px; height: 16px; color: var(--navy); flex-shrink: 0; }
+.card-body { padding: 14px 16px; }
+
+/* ── PILL TABS ── */
+.pill-tabs { display: flex; background: #E8ECF0; border-radius: 11px; padding: 3px; gap: 3px; }
+.pill-tab {
+  flex: 1; padding: 9px 8px; border-radius: 8px; border: none;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  background: transparent; color: var(--muted);
+  transition: all 0.15s;
+}
+.pill-tab.active {
+  background: var(--card); color: var(--navy);
+  box-shadow: 0 1px 4px rgba(11,34,56,.12);
+}
+
+/* ── FORM ── */
+.form-group { margin-bottom: 13px; }
+.form-group:last-child { margin-bottom: 0; }
+.form-label {
+  font-size: 11px; font-weight: 700; color: var(--navy);
+  margin-bottom: 6px; display: block;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.form-input {
+  width: 100%; border: 1.5px solid #E2E8F0; border-radius: 10px;
+  padding: 11px 13px; font-size: 15px; color: var(--text);
+  background: #FAFBFC; outline: none; transition: border-color 0.2s, background 0.2s;
+}
+.form-input:focus { border-color: var(--navy); background: white; }
+.form-input.currency { font-weight: 700; color: var(--navy); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── UPLOAD ── */
+.upload-area {
+  border: 2px dashed #D1D5DB; border-radius: 12px;
+  padding: 22px 16px; text-align: center;
+  background: #FAFBFC; cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.upload-area:active { border-color: var(--navy); background: #EEF3F8; }
+.upload-icon { margin-bottom: 8px; }
+.upload-icon svg { width: 32px; height: 32px; color: var(--navy); opacity: 0.4; }
+.upload-area strong { display: block; font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
+.upload-area p { font-size: 12px; color: var(--muted); }
+.file-attached {
+  background: #F0FDF4; border: 1px solid #BBF7D0;
+  border-radius: 10px; padding: 11px 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.file-attached svg { width: 20px; height: 20px; color: #16A34A; flex-shrink: 0; }
+.file-name { font-size: 13px; color: #166534; font-weight: 600; flex: 1; }
+.file-remove { font-size: 16px; cursor: pointer; color: #6B7280; padding: 2px; }
+
+/* ── EXTRACTED ── */
+.extracted-badge {
+  background: #F0FDF4; border: 1px solid #BBF7D0;
+  border-radius: 10px; padding: 10px 13px;
+  display: flex; gap: 10px; align-items: flex-start;
+  margin-bottom: 12px;
+}
+.extracted-badge svg { width: 18px; height: 18px; color: var(--green); flex-shrink: 0; margin-top: 1px; }
+.extracted-badge h4 { font-size: 13px; font-weight: 700; color: #166534; }
+.extracted-badge p  { font-size: 12px; color: #4B7A5A; margin-top: 1px; }
+
+/* ── ALERT ── */
+.alert {
+  border-radius: 12px; padding: 12px 14px;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.alert-warn { background: #FFFBEB; border: 1px solid #FDE68A; }
+.alert-ok   { background: #F0FDF4; border: 1px solid #BBF7D0; }
+.alert svg  { width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; }
+.alert-warn svg { color: #D97706; }
+.alert-ok   svg { color: var(--green); }
+.alert-text h4  { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.alert-text p   { font-size: 12px; color: var(--muted); }
+.alert-warn h4  { color: #92400E; }
+.alert-ok h4    { color: #166534; }
+
+/* ── CONCILIAÇÃO TABLE ── */
+.concil-header {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding-bottom: 8px; border-bottom: 1px solid #E5E7EB; margin-bottom: 2px;
+}
+.concil-header span {
+  font-size: 10px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.4px;
+  min-width: 72px; text-align: right;
+}
+.concil-header .diff-h { min-width: 58px; text-align: center; }
+.concil-row {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #F5F5F5;
+}
+.concil-row:last-child { border-bottom: none; }
+.concil-label { font-size: 13px; color: #555; flex: 1; }
+.concil-values { display: flex; gap: 8px; align-items: center; }
+.concil-val { font-size: 13px; font-weight: 600; min-width: 72px; text-align: right; }
+.concil-val.sistema { color: var(--text); }
+.concil-val.maquina { color: var(--muted); }
+.concil-diff {
+  font-size: 11px; font-weight: 800; padding: 3px 8px;
+  border-radius: 6px; min-width: 58px; text-align: center;
+}
+.diff-ok   { background: #DCFCE7; color: #166534; }
+.diff-warn { background: #FEF3C7; color: #92400E; }
+.diff-err  { background: #FEE2E2; color: var(--red); }
+.diff-neutral { background: #F3F4F6; color: var(--muted); }
+.concil-total-row {
+  border-top: 1.5px solid #E5E7EB; padding-top: 8px; margin-top: 4px;
+}
+.concil-total-row .concil-label { font-weight: 700; color: var(--navy); }
+.concil-total-row .concil-val.sistema { color: var(--navy); font-size: 14px; }
+
+/* ── DRE ── */
+.dre-consolidated {
+  background: linear-gradient(135deg, var(--navy-dark), var(--navy));
+  border-bottom: 3px solid var(--gold);
+  color: white; border-radius: 14px;
+  padding: 18px 16px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px; text-align: center;
+}
+.dc-label { font-size: 10px; opacity: 0.6; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.dc-value { font-size: 16px; font-weight: 800; }
+
+.dre-cc { padding: 12px 0; border-bottom: 1px solid #F0F0F0; }
+.dre-cc:last-child { border-bottom: none; }
+.dre-cc-name {
+  font-size: 13px; font-weight: 700; color: var(--navy);
+  margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+.dre-cc-name svg { width: 15px; height: 15px; }
+.dre-line { display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0; color: var(--muted); }
+.dre-line.total {
+  font-weight: 800; border-top: 1px solid #E5E7EB;
+  padding-top: 6px; margin-top: 4px;
+  font-size: 14px; color: var(--text);
+}
+.text-green { color: var(--green); }
+.text-red   { color: var(--red); }
+.text-amber { color: var(--amber); }
+
+/* ── HISTORY ROW ── */
+.hist-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid #F5F5F5;
+}
+.hist-row:last-child { border-bottom: none; }
+.hist-row h4 { font-size: 13px; font-weight: 600; color: var(--text); }
+.hist-row p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: block; width: 100%; padding: 14px;
+  border-radius: 12px; border: none; font-size: 15px;
+  font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+  text-align: center; letter-spacing: 0.2px;
+}
+.btn:active { opacity: 0.85; transform: scale(0.99); }
+.btn-primary { background: var(--navy); color: white; box-shadow: 0 4px 14px rgba(11,34,56,.3); }
+.btn-gold    { background: var(--gold); color: var(--navy-dark); box-shadow: 0 4px 14px rgba(201,154,46,.35); }
+.btn-outline { background: white; color: var(--navy); border: 1.5px solid #D1D9E2; }
+.btn-sm { padding: 10px 14px; font-size: 13px; border-radius: 10px; }
+.btn-row { display: flex; gap: 10px; }
+.btn-row .btn { flex: 1; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  background: white; border-top: 1px solid #E5E7EB;
+  display: flex; padding: 8px 0 22px;
+  position: sticky; bottom: 0;
+  box-shadow: 0 -2px 12px rgba(11,34,56,.06);
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 3px; cursor: pointer; padding: 4px;
+  font-size: 10px; font-weight: 600; color: #B0B8C4;
+  text-transform: uppercase; letter-spacing: 0.4px;
+  transition: color 0.15s;
+}
+.nav-item.active { color: var(--navy); }
+.nav-item svg { width: 22px; height: 22px; }
+
+/* ── TEXTAREA ── */
+textarea.form-input { resize: none; }
+
+/* ── UTILS ── */
+.fw-700 { font-weight: 700; }
+.fs-12  { font-size: 12px; }
+.fs-13  { font-size: 13px; }
+.mt-10  { margin-top: 10px; }
+
+/* ── CHARTS ── */
+.chart-wrap {
+  width: 100%;
+  background: var(--card); border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(11,34,56,.07);
+  border: 1px solid #E2E8F0; padding: 16px;
+  overflow: hidden;
+}
+.chart-title {
+  font-size: 12px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.chart-title svg { width: 15px; height: 15px; color: var(--navy); }
+.chart-canvas-wrap { width: 100%; overflow: hidden; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
+
+</script>
+</head>
+<body>
+
+<div class="demo-banner">Demo Operacional · Conciliação Arena Kicks</div>
+
+<!-- SVG ICONS (sprites) -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-bar"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22H6a2 2 0 01-2-2V4h4"/><path d="M18 2h-2l-2 7h4"/><line x1="2" y1="4" x2="22" y2="4"/><path d="M16 9l-2 13h4l-2-13"/></symbol>
+  <symbol id="i-soccer"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+  <symbol id="i-court"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><path d="M9 3a9 9 0 010 18"/><path d="M15 3a9 9 0 010 18"/></symbol>
+  <symbol id="i-parking" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M9 17V7h4a3 3 0 010 6H9"/></symbol>
+  <symbol id="i-chart"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6"  y1="20" x2="6"  y2="14"/><line x1="2"  y1="20" x2="22" y2="20"/></symbol>
+  <symbol id="i-folder"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></symbol>
+  <symbol id="i-home"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+  <symbol id="i-upload"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></symbol>
+  <symbol id="i-pdf"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
+  <symbol id="i-check"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-warn"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="i-plus"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="i-balance" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><path d="M17 6H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></symbol>
+</svg>
+
+<!-- ════════════════════════════════════════════
+     TELA 1: DASHBOARD
+═══════════════════════════════════════════════ -->
+<div class="screen active" id="screen-dashboard">
+  <div class="topbar">
+    <img src="data:image/png;base64,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" alt="Arena Kicks" style="width:42px;height:52px;object-fit:contain;flex-shrink:0">
+    <div>
+      <h1>Arena Kicks</h1>
+      <div class="subtitle">JACAREÍ · CONCILIAÇÃO</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div class="month-bar">
+      <span class="chevron">‹</span>
+      <span class="month-label">Junho 2026</span>
+      <span class="chevron">›</span>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card k-green">
+        <div class="kpi-label">Receita total</div>
+        <div class="kpi-value green">R$ 28.450</div>
+      </div>
+      <div class="kpi-card k-red">
+        <div class="kpi-label">Despesas</div>
+        <div class="kpi-value red">R$ 11.200</div>
+      </div>
+      <div class="kpi-card k-navy">
+        <div class="kpi-label">Resultado</div>
+        <div class="kpi-value navy">R$ 17.250</div>
+      </div>
+      <div class="kpi-card k-amber">
+        <div class="kpi-label">Pendências</div>
+        <div class="kpi-value amber">1 área ⚠️</div>
+      </div>
+    </div>
+
+
+    <!-- GRÁFICO: Receita por Área -->
+    <div class="chart-wrap">
+      <div class="chart-title">
+        <svg><use href="#i-chart"/></svg>
+        Receita por Área — Junho 2026
+      </div>
+      <div class="chart-canvas-wrap">
+        
+            <svg viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:280px;display:block;margin:0 auto">
+        <path d="M 130,100 L 130.0,35.0 A 65,65 0 0,1 150.1,161.8 Z" fill="#123653"/>
+        <path d="M 130,100 L 150.1,161.8 A 65,65 0 0,1 65.0,100.0 Z" fill="#C99A2E"/>
+        <path d="M 130,100 L 65.0,100.0 A 65,65 0 0,1 91.8,47.4 Z" fill="#16A34A"/>
+        <path d="M 130,100 L 91.8,47.4 A 65,65 0 0,1 130.0,35.0 Z" fill="#7C3AED"/>
+        <circle cx="130" cy="100" r="42" fill="white"/>
+        <text x="130" y="96"  text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#123653">R$ 28.450</text>
+        <text x="130" y="111" text-anchor="middle" font-family="Arial" font-size="9"  fill="#6B7280">Receita total</text>
+        <rect x="20"  y="178" width="10" height="10" rx="2" fill="#123653"/>
+        <text x="34"  y="187" font-family="Arial" font-size="9" fill="#555">Bar 45%</text>
+        <rect x="100" y="178" width="10" height="10" rx="2" fill="#C99A2E"/>
+        <text x="114" y="187" font-family="Arial" font-size="9" fill="#555">Escolinha 30%</text>
+        <rect x="20"  y="198" width="10" height="10" rx="2" fill="#16A34A"/>
+        <text x="34"  y="207" font-family="Arial" font-size="9" fill="#555">Society 15%</text>
+        <rect x="100" y="198" width="10" height="10" rx="2" fill="#7C3AED"/>
+        <text x="114" y="207" font-family="Arial" font-size="9" fill="#555">Estac. 10%</text>
+      </svg>
+      </div>
+    </div>
+
+    <div class="section-label">Áreas</div>
+
+    <div class="area-card warning" onclick="goTo('screen-bar')">
+      <div class="area-icon bar">
+        <svg><use href="#i-bar"/></svg>
+      </div>
+      <div class="area-info">
+        <h2>Bar (MIP)</h2>
+        <p>Último relatório: 07/06 — R$ 3.150</p>
+      </div>
+      <span class="area-badge badge-warn">⚠ Diferença</span>
+    </div>
+
+    <div class="area-card ok" onclick="goTo('screen-escolinha')">
+      <div class="area-icon esc">
+        <svg><use href="#i-soccer"/></svg>
+      </div>
+      <div class="area-info">
+        <h2>Escolinha</h2>
+        <p>Último fechamento: 06/06 — R$ 8.400</p>
+      </div>
+      <span class="area-badge badge-ok">✓ OK</span>
+    </div>
+
+    <div class="area-card ok">
+      <div class="area-icon soc">
+        <svg><use href="#i-court"/></svg>
+      </div>
+      <div class="area-info">
+        <h2>Society / Quadras</h2>
+        <p>Último fechamento: 06/06 — R$ 4.200</p>
+      </div>
+      <span class="area-badge badge-ok">✓ OK</span>
+    </div>
+
+    <div class="area-card pending">
+      <div class="area-icon est">
+        <svg><use href="#i-parking"/></svg>
+      </div>
+      <div class="area-info">
+        <h2>Estacionamento</h2>
+        <p>Aguardando relatório Excel</p>
+      </div>
+      <span class="area-badge badge-pending">Pendente</span>
+    </div>
+
+    <button class="btn btn-gold" onclick="goTo('screen-despesa')">
+      + Lançar despesa / pagamento
+    </button>
+
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active">
+      <svg><use href="#i-home"/></svg>Início
+    </div>
+    <div class="nav-item" onclick="goTo('screen-dre')">
+      <svg><use href="#i-chart"/></svg>DRE
+    </div>
+    <div class="nav-item">
+      <svg><use href="#i-folder"/></svg>Histórico
+    </div>
+    <div class="nav-item">
+      <svg><use href="#i-settings"/></svg>Config
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     TELA 2: BAR — CONCILIAÇÃO
+═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-bar">
+  <div class="topbar">
+    <span class="back" onclick="goTo('screen-dashboard')">‹</span>
+    <div>
+      <h1>Conciliação do Bar</h1>
+      <div class="subtitle">MIP · MAQUININHA</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div class="pill-tabs">
+      <button class="pill-tab active" onclick="barTab('importar', this)">Importar Relatório</button>
+      <button class="pill-tab" onclick="barTab('conciliar', this)">Ver Conciliação</button>
+    </div>
+
+    <!-- TAB IMPORTAR -->
+    <div id="bar-tab-importar">
+
+      <div class="card">
+        <div class="card-header">
+          <svg><use href="#i-pdf"/></svg>
+          <h3>Relatório MIP</h3>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Data do relatório</label>
+            <input type="date" class="form-input" value="2026-06-07">
+          </div>
+
+          <div id="upload-empty" class="upload-area" onclick="simulateUpload()">
+            <div class="upload-icon">
+              <svg><use href="#i-upload"/></svg>
+            </div>
+            <strong>Selecionar arquivo</strong>
+            <p>PDF ou Excel da pasta do WhatsApp</p>
+          </div>
+
+          <div id="upload-done" class="file-attached" style="display:none">
+            <svg><use href="#i-pdf"/></svg>
+            <span class="file-name">relatorio_venda_3dia_bolinho.pdf</span>
+            <span class="file-remove" onclick="resetUpload()">✕</span>
+          </div>
+
+          <div id="extracted-data" style="display:none;margin-top:12px">
+            <div class="extracted-badge">
+              <svg><use href="#i-check"/></svg>
+              <div>
+                <h4>Dados extraídos do PDF</h4>
+                <p>Confirme os totais antes de salvar</p>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Total vendas</label>
+                <input class="form-input currency" value="R$ 3.150,00">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Dinheiro</label>
+                <input class="form-input currency" value="R$ 372,00">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Débito</label>
+                <input class="form-input currency" value="R$ 1.959,00">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Crédito</label>
+                <input class="form-input currency" value="R$ 312,00">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Cashless</label>
+                <input class="form-input currency" value="R$ 435,00">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Outros</label>
+                <input class="form-input currency" value="R$ 72,00">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="card-maquininha" style="display:none">
+        <div class="card-header">
+          <svg><use href="#i-balance"/></svg>
+          <h3>Fechamento da Maquininha</h3>
+        </div>
+        <div class="card-body">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Valores da foto ou tela de fechamento</p>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Débito</label>
+              <input class="form-input currency" value="R$ 1.940,00">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Crédito</label>
+              <input class="form-input currency" value="R$ 312,00">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Pix</label>
+              <input class="form-input currency" value="R$ 0,00">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Total maquininha</label>
+              <input class="form-input currency" value="R$ 2.252,00">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-salvar" style="display:none"
+        onclick="barTab('conciliar', document.querySelectorAll('.pill-tab')[1])">
+        Salvar e ver conciliação →
+      </button>
+
+    </div><!-- /tab-importar -->
+
+    <!-- TAB CONCILIAR -->
+    <div id="bar-tab-conciliar" style="display:none">
+
+      <div class="alert alert-warn">
+        <svg><use href="#i-warn"/></svg>
+        <div class="alert-text">
+          <h4>Diferença encontrada no débito</h4>
+          <p>MIP registrou R$ 19,00 a mais que a maquininha. Verifique com a operadora.</p>
+        </div>
+      </div>
+
+
+      <!-- GRÁFICO: Sistema vs Maquininha -->
+      <div class="chart-wrap">
+        <div class="chart-title">
+          <svg><use href="#i-balance"/></svg>
+          Sistema vs Maquininha — 07/06
+        </div>
+        <div class="chart-canvas-wrap">
+          
+      <svg viewBox="0 0 280 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+        <!-- Y labels -->
+        <text x="30" y="20"  text-anchor="end" font-family="Arial" font-size="8" fill="#999">R$2k</text>
+        <text x="30" y="60"  text-anchor="end" font-family="Arial" font-size="8" fill="#999">R$1.5k</text>
+        <text x="30" y="100" text-anchor="end" font-family="Arial" font-size="8" fill="#999">R$1k</text>
+        <text x="30" y="140" text-anchor="end" font-family="Arial" font-size="8" fill="#999">R$0.5k</text>
+        <!-- Grid -->
+        <line x1="33" y1="17"  x2="278" y2="17"  stroke="#F0F0F0" stroke-width="1"/>
+        <line x1="33" y1="57"  x2="278" y2="57"  stroke="#F0F0F0" stroke-width="1"/>
+        <line x1="33" y1="97"  x2="278" y2="97"  stroke="#F0F0F0" stroke-width="1"/>
+        <line x1="33" y1="137" x2="278" y2="137" stroke="#F0F0F0" stroke-width="1"/>
+        <line x1="33" y1="147" x2="278" y2="147" stroke="#E5E7EB" stroke-width="1.5"/>
+        <!-- max=2000, scale=130/2000=0.065 -->
+        <!-- Debito: Sis=1959→127, Maq=1940→126 — DIFFERENCE highlighted -->
+        <rect x="40"  y="20"  width="22" height="127" rx="3" fill="#123653CC"/>
+        <rect x="64"  y="21"  width="22" height="126" rx="3" fill="#C99A2ECC"/>
+        <!-- diff indicator -->
+        <rect x="40" y="20" width="46" height="4" rx="2" fill="#DC2626" opacity="0.8"/>
+        <text x="63" y="17" text-anchor="middle" font-family="Arial" font-size="7" fill="#DC2626" font-weight="700">-R$19</text>
+        <text x="63" y="160" text-anchor="middle" font-family="Arial" font-size="8" fill="#555">Débito</text>
+        <!-- Credito: Sis=312→20, Maq=312→20 — match -->
+        <rect x="110" y="127" width="22" height="20" rx="3" fill="#123653CC"/>
+        <rect x="134" y="127" width="22" height="20" rx="3" fill="#C99A2ECC"/>
+        <text x="133" y="160" text-anchor="middle" font-family="Arial" font-size="8" fill="#555">Crédito</text>
+        <!-- Cashless: Sis=435→28, Maq=0 -->
+        <rect x="180" y="119" width="22" height="28" rx="3" fill="#123653CC"/>
+        <text x="191" y="160" text-anchor="middle" font-family="Arial" font-size="8" fill="#555">Cashless</text>
+        <!-- Dinheiro: Sis=372→24, Maq=0 -->
+        <rect x="240" y="123" width="22" height="24" rx="3" fill="#123653CC"/>
+        <text x="251" y="160" text-anchor="middle" font-family="Arial" font-size="8" fill="#555">Dinheiro</text>
+        <!-- Legend -->
+        <rect x="35"  y="170" width="10" height="8" rx="2" fill="#123653CC"/>
+        <text x="49"  y="177" font-family="Arial" font-size="8" fill="#555">Sistema</text>
+        <rect x="110" y="170" width="10" height="8" rx="2" fill="#C99A2ECC"/>
+        <text x="124" y="177" font-family="Arial" font-size="8" fill="#555">Maquininha</text>
+        <rect x="200" y="170" width="10" height="8" rx="2" fill="#DC2626"/>
+        <text x="214" y="177" font-family="Arial" font-size="8" fill="#DC2626" font-weight="700">Diferença</text>
+      </svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <svg><use href="#i-balance"/></svg>
+          <h3>Sistema x Maquininha — 07/06/2026</h3>
+        </div>
+        <div class="card-body">
+          <div class="concil-header">
+            <span>Sistema</span>
+            <span>Maquininha</span>
+            <span class="diff-h">Diferença</span>
+          </div>
+          <div class="concil-row">
+            <span class="concil-label">Débito</span>
+            <div class="concil-values">
+              <span class="concil-val sistema">R$ 1.959</span>
+              <span class="concil-val maquina">R$ 1.940</span>
+              <span class="concil-diff diff-warn">- R$ 19</span>
+            </div>
+          </div>
+          <div class="concil-row">
+            <span class="concil-label">Crédito</span>
+            <div class="concil-values">
+              <span class="concil-val sistema">R$ 312</span>
+              <span class="concil-val maquina">R$ 312</span>
+              <span class="concil-diff diff-ok">✓ OK</span>
+            </div>
+          </div>
+          <div class="concil-row">
+            <span class="concil-label">Cashless</span>
+            <div class="concil-values">
+              <span class="concil-val sistema">R$ 435</span>
+              <span class="concil-val maquina">—</span>
+              <span class="concil-diff diff-neutral">Interno</span>
+            </div>
+          </div>
+          <div class="concil-row">
+            <span class="concil-label">Dinheiro</span>
+            <div class="concil-values">
+              <span class="concil-val sistema">R$ 372</span>
+              <span class="concil-val maquina">—</span>
+              <span class="concil-diff diff-neutral">Físico</span>
+            </div>
+          </div>
+          <div class="concil-row concil-total-row">
+            <span class="concil-label">Total Relatório</span>
+            <div class="concil-values">
+              <span class="concil-val sistema fw-700">R$ 3.150</span>
+              <span class="concil-val maquina">—</span>
+              <span class="concil-diff diff-neutral">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <svg><use href="#i-pdf"/></svg>
+          <h3>Observação</h3>
+        </div>
+        <div class="card-body">
+          <textarea class="form-input" rows="2" placeholder="Ex: verificar taxa de débito com a Cielo..."></textarea>
+          <button class="btn btn-outline btn-sm mt-10">Salvar observação</button>
+        </div>
+      </div>
+
+    </div><!-- /tab-conciliar -->
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     TELA 3: ESCOLINHA
+═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-escolinha">
+  <div class="topbar">
+    <span class="back" onclick="goTo('screen-dashboard')">‹</span>
+    <div>
+      <h1>Conciliação da Escolinha</h1>
+      <div class="subtitle">GESTÃO ESPORTIVA</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div class="alert alert-ok">
+      <svg><use href="#i-check"/></svg>
+      <div class="alert-text">
+        <h4>Tudo conferido — 06/06/2026</h4>
+        <p>Relatório e maquininha batem. Sem diferenças.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <svg><use href="#i-balance"/></svg>
+        <h3>Sistema x Maquininha — 06/06</h3>
+      </div>
+      <div class="card-body">
+        <div class="concil-header">
+          <span>Sistema</span>
+          <span>Maquininha</span>
+          <span class="diff-h">Diferença</span>
+        </div>
+        <div class="concil-row">
+          <span class="concil-label">Débito</span>
+          <div class="concil-values">
+            <span class="concil-val sistema">R$ 3.200</span>
+            <span class="concil-val maquina">R$ 3.200</span>
+            <span class="concil-diff diff-ok">✓ OK</span>
+          </div>
+        </div>
+        <div class="concil-row">
+          <span class="concil-label">Crédito</span>
+          <div class="concil-values">
+            <span class="concil-val sistema">R$ 1.800</span>
+            <span class="concil-val maquina">R$ 1.800</span>
+            <span class="concil-diff diff-ok">✓ OK</span>
+          </div>
+        </div>
+        <div class="concil-row">
+          <span class="concil-label">Pix</span>
+          <div class="concil-values">
+            <span class="concil-val sistema">R$ 3.400</span>
+            <span class="concil-val maquina">—</span>
+            <span class="concil-diff diff-neutral">Direto</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <svg><use href="#i-folder"/></svg>
+        <h3>Histórico do mês</h3>
+      </div>
+      <div class="card-body">
+        <div class="hist-row">
+          <div><h4>06/06 — Domingo</h4><p>R$ 8.400 total</p></div>
+          <span class="area-badge badge-ok">✓ OK</span>
+        </div>
+        <div class="hist-row">
+          <div><h4>05/06 — Sábado</h4><p>R$ 6.200 total</p></div>
+          <span class="area-badge badge-ok">✓ OK</span>
+        </div>
+        <div class="hist-row">
+          <div><h4>04/06 — Sexta</h4><p>R$ 4.800 total</p></div>
+          <span class="area-badge badge-ok">✓ OK</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     TELA 4: LANÇAR DESPESA
+═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-despesa">
+  <div class="topbar">
+    <span class="back" onclick="goTo('screen-dashboard')">‹</span>
+    <div>
+      <h1>Lançar Despesa</h1>
+      <div class="subtitle">PAGAMENTOS E SAÍDAS</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div class="card">
+      <div class="card-header">
+        <svg><use href="#i-balance"/></svg>
+        <h3>Nova despesa</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Área</label>
+          <select class="form-input">
+            <option>Bar</option>
+            <option>Escolinha</option>
+            <option>Society / Quadras</option>
+            <option>Estacionamento</option>
+            <option>Geral (rateado entre áreas)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Categoria</label>
+          <select class="form-input">
+            <option>Aluguel</option>
+            <option>Energia elétrica</option>
+            <option>Salários</option>
+            <option>Fornecedores</option>
+            <option>Manutenção</option>
+            <option>Outros</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Valor</label>
+            <input class="form-input currency" placeholder="R$ 0,00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data</label>
+            <input type="date" class="form-input" value="2026-06-08">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descrição</label>
+          <input class="form-input" placeholder="Ex: Pagamento Cielo — junho">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Forma de pagamento</label>
+          <select class="form-input">
+            <option>Pix</option>
+            <option>Transferência</option>
+            <option>Boleto</option>
+            <option>Cartão</option>
+            <option>Dinheiro</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goTo('screen-dashboard')">Cancelar</button>
+      <button class="btn btn-primary" onclick="goTo('screen-dashboard')">Salvar</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     TELA 5: DRE
+═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-dre">
+  <div class="topbar">
+    <span class="back" onclick="goTo('screen-dashboard')">‹</span>
+    <div>
+      <h1>DRE — Junho 2026</h1>
+      <div class="subtitle">RESULTADO POR ÁREA</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div class="dre-consolidated">
+      <div>
+        <div class="dc-label">Receita</div>
+        <div class="dc-value" style="color:#86EFAC">R$ 28.450</div>
+      </div>
+      <div>
+        <div class="dc-label">Despesas</div>
+        <div class="dc-value" style="color:#FCA5A5">R$ 11.200</div>
+      </div>
+      <div>
+        <div class="dc-label">Resultado</div>
+        <div class="dc-value" style="color:white">R$ 17.250</div>
+      </div>
+    </div>
+
+
+    <!-- GRÁFICO: Receita vs Despesa por Área -->
+    <div class="chart-wrap">
+      <div class="chart-title">
+        <svg><use href="#i-chart"/></svg>
+        Receita vs Despesa por Área
+      </div>
+      <div class="chart-canvas-wrap tall">
+        
+      <svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;max-height:260px">
+        <!-- Y axis labels -->
+        <text x="28" y="20"  text-anchor="end" font-family="Arial" font-size="8" fill="#999">R$12k</text>
+        <text x="28" y="60"  text-anchor="end" font-family="Arial" font-size="8" fill="#999">R$9k</text>
+        <text x="28" y="100" text-anchor="end" font-family="Arial" font-size="8" fill="#999">R$6k</text>
+        <text x="28" y="140" text-anchor="end" font-family="Arial" font-size="8" fill="#999">R$3k</text>
+        <text x="28" y="160" text-anchor="end" font-family="Arial" font-size="8" fill="#999">R$0</text>
+        <!-- Grid lines -->
+        <line x1="32" y1="17"  x2="318" y2="17"  stroke="#F0F0F0" stroke-width="1"/>
+        <line x1="32" y1="57"  x2="318" y2="57"  stroke="#F0F0F0" stroke-width="1"/>
+        <line x1="32" y1="97"  x2="318" y2="97"  stroke="#F0F0F0" stroke-width="1"/>
+        <line x1="32" y1="137" x2="318" y2="137" stroke="#F0F0F0" stroke-width="1"/>
+        <line x1="32" y1="157" x2="318" y2="157" stroke="#E5E7EB" stroke-width="1.5"/>
+        <!-- BAR area: x=35, group width=62 -->
+        <!-- Bar: Receita 12800/12800*140=140, Desp 6000/12800*140=65, Res 6800/12800*140=74 -->
+        <rect x="38"  y="17"  width="16" height="140" rx="3" fill="#16A34ACC"/>
+        <rect x="56"  y="92"  width="16" height="65"  rx="3" fill="#DC2626CC"/>
+        <rect x="74"  y="83"  width="16" height="74"  rx="3" fill="#123653CC"/>
+        <text x="75" y="170" text-anchor="middle" font-family="Arial" font-size="8" fill="#555">Bar</text>
+        <!-- Escolinha: Rec 8400→92, Desp 3000→33, Res 5400→59 -->
+        <rect x="104" y="65"  width="16" height="92" rx="3" fill="#16A34ACC"/>
+        <rect x="122" y="124" width="16" height="33" rx="3" fill="#DC2626CC"/>
+        <rect x="140" y="98"  width="16" height="59" rx="3" fill="#123653CC"/>
+        <text x="141" y="170" text-anchor="middle" font-family="Arial" font-size="8" fill="#555">Escolinha</text>
+        <!-- Society: Rec 4200→46, Desp 2100→23, Res 2100→23 -->
+        <rect x="170" y="111" width="16" height="46" rx="3" fill="#16A34ACC"/>
+        <rect x="188" y="134" width="16" height="23" rx="3" fill="#DC2626CC"/>
+        <rect x="206" y="134" width="16" height="23" rx="3" fill="#123653CC"/>
+        <text x="207" y="170" text-anchor="middle" font-family="Arial" font-size="8" fill="#555">Society</text>
+        <!-- Estac: Rec 3050→33, Desp 1100→12, Res 1950→21 -->
+        <rect x="236" y="124" width="16" height="33" rx="3" fill="#16A34ACC"/>
+        <rect x="254" y="145" width="16" height="12" rx="3" fill="#DC2626CC"/>
+        <rect x="272" y="136" width="16" height="21" rx="3" fill="#123653CC"/>
+        <text x="273" y="170" text-anchor="middle" font-family="Arial" font-size="8" fill="#555">Estac.</text>
+        <!-- Legend -->
+        <rect x="35"  y="182" width="10" height="8" rx="2" fill="#16A34ACC"/>
+        <text x="49"  y="189" font-family="Arial" font-size="8" fill="#555">Receita</text>
+        <rect x="100" y="182" width="10" height="8" rx="2" fill="#DC2626CC"/>
+        <text x="114" y="189" font-family="Arial" font-size="8" fill="#555">Despesas</text>
+        <rect x="175" y="182" width="10" height="8" rx="2" fill="#123653CC"/>
+        <text x="189" y="189" font-family="Arial" font-size="8" fill="#555">Resultado</text>
+      </svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <svg><use href="#i-chart"/></svg>
+        <h3>Por área</h3>
+      </div>
+      <div class="card-body">
+
+        <div class="dre-cc">
+          <div class="dre-cc-name">
+            <svg><use href="#i-bar"/></svg> Bar
+          </div>
+          <div class="dre-line"><span>Receita</span><span class="text-green fw-700">R$ 12.800</span></div>
+          <div class="dre-line"><span>Despesas diretas</span><span class="text-red">- R$ 4.200</span></div>
+          <div class="dre-line"><span>Rateio geral</span><span class="text-amber">- R$ 1.800</span></div>
+          <div class="dre-line total"><span>Resultado Bar</span><span class="text-green">R$ 6.800</span></div>
+        </div>
+
+        <div class="dre-cc">
+          <div class="dre-cc-name">
+            <svg><use href="#i-soccer"/></svg> Escolinha
+          </div>
+          <div class="dre-line"><span>Receita</span><span class="text-green fw-700">R$ 8.400</span></div>
+          <div class="dre-line"><span>Despesas diretas</span><span class="text-red">- R$ 2.100</span></div>
+          <div class="dre-line"><span>Rateio geral</span><span class="text-amber">- R$ 900</span></div>
+          <div class="dre-line total"><span>Resultado Escolinha</span><span class="text-green">R$ 5.400</span></div>
+        </div>
+
+        <div class="dre-cc">
+          <div class="dre-cc-name">
+            <svg><use href="#i-court"/></svg> Society / Quadras
+          </div>
+          <div class="dre-line"><span>Receita</span><span class="text-green fw-700">R$ 4.200</span></div>
+          <div class="dre-line"><span>Despesas diretas</span><span class="text-red">- R$ 1.500</span></div>
+          <div class="dre-line"><span>Rateio geral</span><span class="text-amber">- R$ 600</span></div>
+          <div class="dre-line total"><span>Resultado Society</span><span class="text-green">R$ 2.100</span></div>
+        </div>
+
+        <div class="dre-cc">
+          <div class="dre-cc-name">
+            <svg><use href="#i-parking"/></svg> Estacionamento
+          </div>
+          <div class="dre-line"><span>Receita</span><span class="text-green fw-700">R$ 3.050</span></div>
+          <div class="dre-line"><span>Despesas diretas</span><span class="text-red">- R$ 800</span></div>
+          <div class="dre-line"><span>Rateio geral</span><span class="text-amber">- R$ 300</span></div>
+          <div class="dre-line total"><span>Resultado Estac.</span><span class="text-green">R$ 1.950</span></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline btn-sm">Exportar Excel</button>
+      <button class="btn btn-outline btn-sm">Exportar PDF</button>
+    </div>
+
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('screen-dashboard')">
+      <svg><use href="#i-home"/></svg>Início
+    </div>
+    <div class="nav-item active">
+      <svg><use href="#i-chart"/></svg>DRE
+    </div>
+    <div class="nav-item">
+      <svg><use href="#i-folder"/></svg>Histórico
+    </div>
+    <div class="nav-item">
+      <svg><use href="#i-settings"/></svg>Config
+    </div>
+  </div>
+</div>
+
+<script>
+  function goTo(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+    document.getElementById(id).classList.add('active')
+    window.scrollTo(0, 0)
+  }
+
+  function barTab(tab, el) {
+    document.getElementById('bar-tab-importar').style.display  = tab === 'importar'  ? 'contents' : 'none'
+    document.getElementById('bar-tab-conciliar').style.display = tab === 'conciliar' ? 'contents' : 'none'
+    document.querySelectorAll('.pill-tab').forEach(t => t.classList.remove('active'))
+    if (el) el.classList.add('active')
+  }
+
+  function simulateUpload() {
+    document.getElementById('upload-empty').style.display   = 'none'
+    document.getElementById('upload-done').style.display    = 'flex'
+    document.getElementById('extracted-data').style.display = 'block'
+    document.getElementById('card-maquininha').style.display = 'block'
+    document.getElementById('btn-salvar').style.display      = 'block'
+  }
+
+  function resetUpload() {
+    document.getElementById('upload-empty').style.display   = 'flex'
+    document.getElementById('upload-done').style.display    = 'none'
+    document.getElementById('extracted-data').style.display = 'none'
+    document.getElementById('card-maquininha').style.display = 'none'
+    document.getElementById('btn-salvar').style.display      = 'none'
+  }
+</script>
+</body>
+</html>
