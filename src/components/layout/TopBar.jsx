@@ -1,10 +1,18 @@
+import { useAuth } from '../../contexts/AuthContext'
+
 export default function TopBar({ onMenuClick }) {
+  const { profile } = useAuth()
+
+  const initials = profile?.name
+    ? profile.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+    : '?'
+
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-4 md:px-6">
-      {/* Menu mobile */}
+    <header className="bg-kicks-navy px-4 py-3 flex items-center gap-3 md:hidden shadow-md">
+      {/* Botão hamburger */}
       <button
         onClick={onMenuClick}
-        className="md:hidden text-gray-500 hover:text-gray-700"
+        className="text-white/80 hover:text-white transition-colors"
         aria-label="Abrir menu"
       >
         <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -12,10 +20,21 @@ export default function TopBar({ onMenuClick }) {
         </svg>
       </button>
 
-      <div className="flex-1" />
+      {/* Logo centralizado */}
+      <div className="flex-1 flex items-center justify-center">
+        <img
+          src="/logo.png"
+          alt="Arena Kicks"
+          className="h-8 object-contain drop-shadow"
+          onError={e => { e.target.style.display = 'none' }}
+        />
+      </div>
 
-      {/* Badge ambiente */}
-      <span className="text-xs text-gray-400">Arena Kicks Jacareí</span>
+      {/* Avatar do usuário */}
+      <div className="h-8 w-8 rounded-full bg-kicks-gold flex items-center justify-center
+                      text-kicks-navy font-bold text-xs shrink-0">
+        {initials}
+      </div>
     </header>
   )
 }

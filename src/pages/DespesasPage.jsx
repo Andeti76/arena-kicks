@@ -26,6 +26,7 @@ const EMPTY_FORM = {
   amount:         '',
   payment_method: 'pix',
   is_general:     false,
+  supplier_name:  '',
   proof_note:     '',
 }
 
@@ -84,7 +85,7 @@ export default function DespesasPage() {
     const { data } = await supabase
       .from('expenses')
       .select(`
-        id, expense_date, description, amount, payment_method, is_general, proof_note,
+        id, expense_date, description, amount, payment_method, is_general, supplier_name, proof_note,
         cost_centers ( name ),
         expense_categories ( name )
       `)
@@ -127,6 +128,7 @@ export default function DespesasPage() {
       amount:         parseFloat(form.amount),
       payment_method: form.payment_method,
       is_general:     form.is_general,
+      supplier_name:  form.supplier_name || null,
       proof_note:     form.proof_note || null,
       created_by:     user?.id,
     }
@@ -351,7 +353,17 @@ export default function DespesasPage() {
                   required
                 />
               </div>
-              <div className="col-span-2">
+              <div>
+                <label className="label-field">Fornecedor (opcional)</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Atacadão, Posto Shell"
+                  value={form.supplier_name}
+                  onChange={e => set('supplier_name', e.target.value)}
+                  className="input-field"
+                />
+              </div>
+              <div>
                 <label className="label-field">Nota do comprovante (opcional)</label>
                 <input
                   type="text"
@@ -433,6 +445,11 @@ export default function DespesasPage() {
                           </span>
                         ) : null}
                       </div>
+                      {exp.supplier_name && (
+                        <p className="text-xs text-gray-500 mt-1 truncate">
+                          🏪 {exp.supplier_name}
+                        </p>
+                      )}
                       {exp.proof_note && (
                         <p className="text-xs text-gray-400 mt-1 truncate">{exp.proof_note}</p>
                       )}
