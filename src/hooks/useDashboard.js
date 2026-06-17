@@ -52,6 +52,14 @@ export function useDashboard(period = 'month') {
         .lte('expense_date', end)
       if (expErr) throw expErr
 
+      // ── 3b. Patrocínio do período
+      const { data: sponsorPayments } = await supabase
+        .from('sponsor_payments')
+        .select('amount')
+        .gte('payment_date', start)
+        .lte('payment_date', end)
+      const sponsorIncome = (sponsorPayments ?? []).reduce((s, p) => s + Number(p.amount ?? 0), 0)
+
       // ── 4. Rateio de despesas gerais
       const generalExpenseIds = (expenses ?? [])
         .filter(e => e.is_general)
@@ -101,16 +109,17 @@ export function useDashboard(period = 'month') {
       const totalExpense = cards.reduce((s, c) => s + c.expense, 0)
 
       const consolidated = {
-        id:         'consolidated',
-        name:       'Arena Kicks (Consolidado)',
-        code:       'ALL',
-        income:     totalIncome,
-        expense:    totalExpense,
-        result:     totalIncome - totalExpense,
-        statusToday: null,
+        id:           'consolidated',
+        name:         'Arena Kicks (Consolidado)',
+        code:         'ALL',
+        income:       totalIncome,
+        sponsorIncome,
+        expense:      totalExpense,
+        result:       totalIncome + sponsorIncome - totalExpense,
+        statusToday:  null,
       }
 
-      setData({ cards, consolidated, period, start, end })
+      setData({ cards, consolidated, sponsorIncome, period, start, end })
     } catch (err) {
       setError(err.message)
     } finally {

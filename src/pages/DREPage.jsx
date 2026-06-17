@@ -47,6 +47,8 @@ export default function DREPage() {
       { data: prevExpenses },
       { data: allocations },
       { data: prevAllocations },
+      { data: sponsorPayments },
+      { data: prevSponsorPayments },
     ] = await Promise.all([
       // Centros de custo
       supabase.from('cost_centers').select('id, name, code').eq('is_active', true).order('sort_order'),
@@ -78,6 +80,16 @@ export default function DREPage() {
       // Rateio período anterior (via join)
       supabase.from('expense_allocations')
         .select('cost_center_id, amount, expense_id'),
+
+      // Patrocínio período atual
+      supabase.from('sponsor_payments')
+        .select('amount')
+        .gte('payment_date', start).lte('payment_date', end),
+
+      // Patrocínio período anterior
+      supabase.from('sponsor_payments')
+        .select('amount')
+        .gte('payment_date', prevStart).lte('payment_date', prevEnd),
     ])
 
     // IDs das despesas gerais de cada período para filtrar alocações
@@ -119,12 +131,20 @@ export default function DREPage() {
       }
     })
 
+    const sponsorIncome     = (sponsorPayments     ?? []).reduce((s, p) => s + Number(p.amount ?? 0), 0)
+    const prevSponsorIncome = (prevSponsorPayments ?? []).reduce((s, p) => s + Number(p.amount ?? 0), 0)
+
+    const totalIncome  = rows.reduce((s, r) => s + r.income,   0)
+    const totalExpense = rows.reduce((s, r) => s + r.expense,  0)
+
     const consolidated = {
-      income:     rows.reduce((s, r) => s + r.income,   0),
-      expense:    rows.reduce((s, r) => s + r.expense,  0),
-      result:     rows.reduce((s, r) => s + r.result,   0),
-      prevIncome: rows.reduce((s, r) => s + r.prevIncome, 0),
-      prevResult: rows.reduce((s, r) => s + r.prevResult, 0),
+      income:             totalIncome,
+      sponsorIncome,
+      expense:            totalExpense,
+      result:             totalIncome + sponsorIncome - totalExpense,
+      prevIncome:         rows.reduce((s, r) => s + r.prevIncome, 0),
+      prevSponsorIncome,
+      prevResult:         rows.reduce((s, r) => s + r.prevIncome, 0) + prevSponsorIncome - rows.reduce((s, r) => s + r.prevExpense, 0),
     }
 
     setData({ rows, consolidated, start, end, prevStart, prevEnd })
@@ -138,10 +158,13 @@ export default function DREPage() {
     const aoa = [
       [`DRE Arena Kicks — ${fmtDate(data.start)} a ${fmtDate(data.end)}`],
       [],
-      ['Centro de Custo', 'Receita', 'Desp. Direta', 'Rateio', 'Desp. Total', 'Resultado'],
+      ['Centro de Custo', 'Receita Op.', 'Desp. Direta', 'Rateio', 'Desp. Total', 'Resultado'],
       ...data.rows.map(r => [r.name, r.income, r.directExp, r.allocated, r.expense, r.result]),
+      ...(data.consolidated.sponsorIncome > 0
+        ? [['Patrocínio', data.consolidated.sponsorIncome, '', '', '', data.consolidated.sponsorIncome]]
+        : []),
       [],
-      ['CONSOLIDADO', data.consolidated.income, '', '', data.consolidated.expense, data.consolidated.result],
+      ['TOTAL', data.consolidated.income + data.consolidated.sponsorIncome, '', '', data.consolidated.expense, data.consolidated.result],
     ]
     const ws = XLSX.utils.aoa_to_sheet(aoa)
     XLSX.utils.book_append_sheet(wb, ws, 'DRE')
@@ -204,12 +227,18 @@ export default function DREPage() {
           {/* Consolidado */}
           <div className="bg-kicks-navy text-white rounded-xl p-5 mb-4">
             <p className="text-sm font-semibold text-white/70 mb-3">🏆 Arena Kicks — Consolidado</p>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <KpiBox
-                label="Receita Total"
+                label="Receita Operacional"
                 value={data.consolidated.income}
                 prev={data.consolidated.prevIncome}
                 color="text-green-300"
+              />
+              <KpiBox
+                label="Patrocínio"
+                value={data.consolidated.sponsorIncome}
+                prev={data.consolidated.prevSponsorIncome}
+                color="text-yellow-300"
               />
               <KpiBox
                 label="Despesa Total"
@@ -261,10 +290,28 @@ export default function DREPage() {
                     </tr>
                   )
                 })}
+                {/* Linha Patrocínio */}
+                {data.consolidated.sponsorIncome > 0 && (
+                  <tr className="bg-amber-50/60 border-t border-amber-100">
+                    <td className="px-4 py-3 font-medium text-amber-700 flex items-center gap-1.5">
+                      🤝 Patrocínio
+                    </td>
+                    <td className="px-4 py-3 text-right text-amber-600 font-semibold">
+                      {fmt(data.consolidated.sponsorIncome)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-300">—</td>
+                    <td className="px-4 py-3 text-right text-amber-600 font-semibold">
+                      +{fmt(data.consolidated.sponsorIncome)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-400 text-xs hidden sm:table-cell">
+                      {data.consolidated.prevSponsorIncome > 0 ? fmt(data.consolidated.prevSponsorIncome) : '—'}
+                    </td>
+                  </tr>
+                )}
                 {/* Linha totais */}
                 <tr className="bg-kicks-navy/5 border-t-2 border-kicks-navy/20 font-bold">
                   <td className="px-4 py-3 text-kicks-navy">Total</td>
-                  <td className="px-4 py-3 text-right text-green-600">{fmt(data.consolidated.income)}</td>
+                  <td className="px-4 py-3 text-right text-green-600">{fmt(data.consolidated.income + data.consolidated.sponsorIncome)}</td>
                   <td className="px-4 py-3 text-right text-red-500">{fmt(data.consolidated.expense)}</td>
                   <td className={`px-4 py-3 text-right ${data.consolidated.result >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                     {data.consolidated.result >= 0 ? '+' : ''}{fmt(data.consolidated.result)}

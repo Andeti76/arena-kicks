@@ -72,10 +72,11 @@ export default function DashboardPage() {
   const [period, setPeriod] = useState('month')
   const { data, loading, error, reload } = useDashboard(period)
 
-  const consolidated = data?.consolidated
-  const cards        = data?.cards ?? []
-  const pendingCount = cards.filter(c => c.statusToday === 'pending').length
-  const discCount    = cards.filter(c => c.statusToday === 'discrepancy').length
+  const consolidated  = data?.consolidated
+  const sponsorIncome = data?.sponsorIncome ?? 0
+  const cards         = data?.cards ?? []
+  const pendingCount  = cards.filter(c => c.statusToday === 'pending').length
+  const discCount     = cards.filter(c => c.statusToday === 'discrepancy').length
 
   const periodLabel = period === 'day'
     ? `Hoje — ${fmtDate(data?.start)}`
@@ -143,17 +144,17 @@ export default function DashboardPage() {
       {/* ── Conteúdo ── */}
       {!loading && !error && data && (
         <>
-          {/* ── Hero: 4 KPIs ── */}
+          {/* ── Hero: KPIs ── */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(2, 1fr)',
             gap: '12px',
-            marginBottom: '24px',
+            marginBottom: '12px',
           }}
           className="sm:grid-cols-4"
           >
             <KpiBox
-              label="Receita"
+              label="Receita Operacional"
               value={fmt(consolidated?.income)}
               color="#059669"
               icon="💰"
@@ -171,7 +172,7 @@ export default function DashboardPage() {
               value={fmt(consolidated?.result)}
               color={consolidated?.result >= 0 ? '#059669' : '#dc2626'}
               icon={consolidated?.result >= 0 ? '📈' : '📉'}
-              sub="receita − despesa"
+              sub="op. + patroc. − despesa"
             />
             <KpiBox
               label="Atenção"
@@ -181,6 +182,35 @@ export default function DashboardPage() {
               sub={discCount > 0 ? 'com divergência' : pendingCount > 0 ? 'sem conciliação' : 'conciliado'}
             />
           </div>
+
+          {/* ── Patrocínio (separado) ── */}
+          {sponsorIncome > 0 && (
+            <div style={{
+              background: 'linear-gradient(135deg, #0B2238, #0d3050)',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '22px' }}>🤝</span>
+                <div>
+                  <p style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    Patrocínio {period === 'month' ? 'no mês' : 'hoje'}
+                  </p>
+                  <p style={{ fontSize: '20px', fontWeight: 800, color: '#C99A2E', letterSpacing: '-0.5px' }}>
+                    {fmt(sponsorIncome)}
+                  </p>
+                </div>
+              </div>
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', textAlign: 'right' }}>
+                Receita não<br />operacional
+              </p>
+            </div>
+          )}
 
           {/* ── Divisor ── */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
