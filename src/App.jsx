@@ -9,7 +9,8 @@ import ConciliacaoPage  from './pages/ConciliacaoPage'
 import DespesasPage     from './pages/DespesasPage'
 import EventosPage      from './pages/EventosPage'
 import DREPage          from './pages/DREPage'
-import SettingsPage     from './pages/SettingsPage'
+import SettingsPage         from './pages/SettingsPage'
+import PatrocinadoresPage  from './pages/PatrocinadoresPage'
 
 // Layout
 import AppLayout from './components/layout/AppLayout'
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="conciliacao" element={<ConciliacaoPage />} />
           <Route path="despesas" element={<DespesasPage />} />
           <Route path="eventos" element={<EventosPage />} />
+          <Route path="patrocinadores" element={<PatrocinadoresPage />} />
           <Route path="dre" element={<DREPage />} />
           <Route path="configuracoes" element={<SettingsPage />} />
         </Route>
