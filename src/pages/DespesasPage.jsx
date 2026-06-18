@@ -32,6 +32,9 @@ const EMPTY_FORM = {
 export default function DespesasPage() {
   const { user } = useAuth()
 
+  const now = new Date()
+  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
   const [tab, setTab] = useState('form')         // 'form' | 'list'
   const [costCenters, setCostCenters] = useState([])
   const [subAreas, setSubAreas] = useState([])
@@ -44,6 +47,9 @@ export default function DespesasPage() {
   const [success, setSuccess] = useState(false)
   // Rateio: { [cc_id]: percentage }
   const [alloc, setAlloc] = useState({})
+  // Filtros do histórico
+  const [filterMonth,  setFilterMonth]  = useState(defaultMonth)
+  const [filterCC,     setFilterCC]     = useState('')
 
   // ── Busca dados de referência ──
   useEffect(() => {
@@ -80,18 +86,27 @@ export default function DespesasPage() {
   // ── Busca lista de despesas ──
   const loadExpenses = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase
+    const [year, month] = filterMonth.split('-')
+    const start = `${year}-${month}-01`
+    const end   = new Date(Number(year), Number(month), 0).toISOString().split('T')[0]
+
+    let q = supabase
       .from('expenses')
       .select(`
         id, expense_date, description, amount, payment_method, is_general, supplier_name, proof_note,
         cost_centers ( name ),
         expense_categories ( name )
       `)
+      .gte('expense_date', start)
+      .lte('expense_date', end)
       .order('expense_date', { ascending: false })
-      .limit(50)
+
+    if (filterCC) q = q.eq('cost_center_id', filterCC)
+
+    const { data } = await q
     setLoading(false)
     setExpenses(data ?? [])
-  }, [])
+  }, [filterMonth, filterCC])
 
   useEffect(() => {
     if (tab === 'list') loadExpenses()
@@ -402,6 +417,41 @@ export default function DespesasPage() {
       {/* ── TAB: LISTA ── */}
       {tab === 'list' && (
         <div>
+          {/* Filtros */}
+          <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm mb-4 flex flex-wrap gap-3 items-end">
+            <div>
+              <label className="label-field">Mês</label>
+              <input
+                type="month"
+                value={filterMonth}
+                onChange={e => setFilterMonth(e.target.value)}
+                className="input-field w-40"
+              />
+            </div>
+            <div>
+              <label className="label-field">Área</label>
+              <select
+                value={filterCC}
+                onChange={e => setFilterCC(e.target.value)}
+                className="input-field w-44"
+              >
+                <option value="">Todas</option>
+                {costCenters.map(cc => (
+                  <option key={cc.id} value={cc.id}>{cc.name}</option>
+                ))}
+              </select>
+            </div>
+            {expenses.length > 0 && (
+              <div className="ml-auto text-right">
+                <p className="text-xs text-gray-400 uppercase tracking-wide">Total do período</p>
+                <p className="text-lg font-bold text-red-600">
+                  -{fmt(expenses.reduce((s, e) => s + Number(e.amount), 0))}
+                </p>
+                <p className="text-xs text-gray-400">{expenses.length} lançamento{expenses.length !== 1 ? 's' : ''}</p>
+              </div>
+            )}
+          </div>
+
           {loading && (
             <div className="flex items-center justify-center py-20 text-gray-400">
               Carregando...
@@ -411,7 +461,7 @@ export default function DespesasPage() {
             <div className="text-center py-20 text-gray-400">
               <p className="text-4xl mb-3">💸</p>
               <p className="font-medium">Nenhuma despesa encontrada</p>
-              <p className="text-sm">Lance a primeira despesa pela aba "Lançar".</p>
+              <p className="text-sm">Nenhum lançamento para o período e área selecionados.</p>
             </div>
           )}
           {!loading && expenses.length > 0 && (
