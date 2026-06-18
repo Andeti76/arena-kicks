@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { fmt, fmtDate } from '../lib/format'
 
 const SUB_COLORS = {
   'Quadras de Areia': { bg: 'bg-yellow-50', border: 'border-yellow-400', icon: '🏖️' },
   'Quadras Society':  { bg: 'bg-blue-50',   border: 'border-blue-400',   icon: '⚽' },
   'Churrasqueira':    { bg: 'bg-red-50',     border: 'border-red-400',    icon: '🔥' },
-}
-
-function fmt(v) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0)
 }
 
 function getMonthRange(year, month) {
@@ -199,7 +196,7 @@ export default function EventosPage() {
                         <div key={i} className="flex justify-between items-center bg-white/60 rounded-lg px-3 py-2">
                           <div>
                             <p className="text-xs font-medium text-gray-700">{exp.description}</p>
-                            <p className="text-xs text-gray-400">{exp.expense_date.split('-').reverse().join('/')}</p>
+                            <p className="text-xs text-gray-400">{fmtDate(exp.expense_date)}</p>
                           </div>
                           <p className="text-xs font-semibold text-red-500">{fmt(exp.amount)}</p>
                         </div>

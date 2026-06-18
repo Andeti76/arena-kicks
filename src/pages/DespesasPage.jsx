@@ -427,7 +427,7 @@ export default function DespesasPage() {
                         {exp.description}
                       </p>
                       <div className="flex flex-wrap gap-2 mt-1">
-                        <span className="text-xs text-gray-500">{fmtDateBR(exp.expense_date)}</span>
+                        <span className="text-xs text-gray-500">{fmtDate(exp.expense_date)}</span>
                         {exp.expense_categories?.name && (
                           <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                             {exp.expense_categories.name}
@@ -466,6 +466,3 @@ export default function DespesasPage() {
   )
 }
 
-function fmtDateBR(dateStr) {
-  return fmtDate(dateStr)
-}

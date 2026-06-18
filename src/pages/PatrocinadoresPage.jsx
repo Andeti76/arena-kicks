@@ -287,7 +287,7 @@ export default function PatrocinadoresPage() {
                       <p className="text-sm font-medium text-kicks-navy truncate">
                         {p.sponsors?.name ?? '—'}
                       </p>
-                      <p className="text-xs text-gray-400">{fmtDateBR(p.payment_date)}{p.notes ? ` · ${p.notes}` : ''}</p>
+                      <p className="text-xs text-gray-400">{fmtDate(p.payment_date)}{p.notes ? ` · ${p.notes}` : ''}</p>
                     </div>
                     <span className="font-bold text-green-600 text-sm shrink-0">+{fmt(p.amount)}</span>
                   </div>
@@ -498,6 +498,3 @@ export default function PatrocinadoresPage() {
   )
 }
 
-function fmtDateBR(dateStr) {
-  return fmtDate(dateStr)
-}

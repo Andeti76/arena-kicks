@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
+import { Routes, Route, NavLink } from 'react-router-dom'
 import { useStudents, useMonthlyFees } from '../hooks/useEscolinha'
-import StudentForm   from '../components/escolinha/StudentForm'
+import StudentForm    from '../components/escolinha/StudentForm'
 import EnrollmentForm from '../components/escolinha/EnrollmentForm'
-import { supabase }  from '../lib/supabase'
+import { supabase }   from '../lib/supabase'
+import { fmt, fmtDate } from '../lib/format'
 
 export default function EscolinhaPage() {
   return (
@@ -132,26 +133,42 @@ function StudentCard({ student, onEdit, onDelete, onEnroll }) {
 }
 
 /* ─────────────────────────────────── MENSALIDADES ── */
+const PAYMENT_METHODS = [
+  { value: 'pix',      label: 'PIX' },
+  { value: 'cash',     label: 'Dinheiro' },
+  { value: 'card',     label: 'Cartão' },
+  { value: 'transfer', label: 'Transferência' },
+]
+
 function MensalidadesTab() {
   const now = new Date()
-  const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+  const [month,      setMonth]      = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
   const [generating, setGenerating] = useState(false)
+  const [toast,      setToast]      = useState(null)   // { type: 'success'|'error', msg: string }
+  const [payingFee,  setPayingFee]  = useState(null)   // fee object sendo pago
+  const [payMethod,  setPayMethod]  = useState('pix')
   const { fees, loading, summary, reload } = useMonthlyFees(month)
+
+  function showToast(type, msg) {
+    setToast({ type, msg })
+    setTimeout(() => setToast(null), 4000)
+  }
 
   async function generateFees() {
     setGenerating(true)
     const { data, error } = await supabase.rpc('generate_monthly_fees', { p_month: month + '-01' })
     setGenerating(false)
-    if (error) alert('Erro: ' + error.message)
-    else { alert(`${data} mensalidade(s) gerada(s).`); reload() }
+    if (error) showToast('error', 'Erro ao gerar: ' + error.message)
+    else { showToast('success', `${data} mensalidade(s) gerada(s).`); reload() }
   }
 
-  async function markPaid(fee) {
-    const method = prompt('Forma de pagamento: pix, cash, card ou transfer', 'pix')
-    if (!method) return
+  async function confirmMarkPaid() {
+    if (!payingFee) return
     await supabase.from('monthly_fees').update({
-      status: 'paid', paid_at: new Date().toISOString(), payment_method: method
-    }).eq('id', fee.id)
+      status: 'paid', paid_at: new Date().toISOString(), payment_method: payMethod,
+    }).eq('id', payingFee.id)
+    setPayingFee(null)
+    setPayMethod('pix')
     reload()
   }
 
@@ -172,6 +189,55 @@ function MensalidadesTab() {
           {generating ? 'Gerando...' : '⚡ Gerar mensalidades'}
         </button>
       </div>
+
+      {/* Toast inline */}
+      {toast && (
+        <div className={`mb-4 px-4 py-3 rounded-lg text-sm font-medium ${
+          toast.type === 'success'
+            ? 'bg-green-50 border border-green-200 text-green-700'
+            : 'bg-red-50 border border-red-200 text-red-600'
+        }`}>
+          {toast.type === 'success' ? '✅' : '⚠️'} {toast.msg}
+        </div>
+      )}
+
+      {/* Modal de forma de pagamento */}
+      {payingFee && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl w-full max-w-xs p-6 shadow-xl">
+            <h3 className="font-semibold text-kicks-navy mb-1">Registrar Recebimento</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {payingFee.enrollments?.students?.full_name} — {fmt(payingFee.amount)}
+            </p>
+            <p className="text-xs font-medium text-gray-600 mb-2">Forma de pagamento</p>
+            <div className="grid grid-cols-2 gap-2 mb-5">
+              {PAYMENT_METHODS.map(m => (
+                <button
+                  key={m.value}
+                  onClick={() => setPayMethod(m.value)}
+                  className={`py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    payMethod === m.value
+                      ? 'bg-kicks-navy text-white border-kicks-navy'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-kicks-navy'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => { setPayingFee(null); setPayMethod('pix') }}
+                className="flex-1 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:border-gray-400 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={confirmMarkPaid}
+                className="flex-1 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors">
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Resumo */}
       {!loading && summary.total > 0 && (
@@ -211,7 +277,7 @@ function MensalidadesTab() {
               {STATUS_LABEL[fee.status]}
             </span>
             {fee.status !== 'paid' && (
-              <button onClick={() => markPaid(fee)}
+              <button onClick={() => { setPayingFee(fee); setPayMethod('pix') }}
                 className="text-xs text-green-600 border border-green-200 px-2 py-1 rounded hover:bg-green-50 transition-colors">
                 Receber
               </button>
@@ -247,12 +313,3 @@ function Modal({ title, children, onClose }) {
   )
 }
 
-function fmt(v) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
-}
-
-function fmtDate(d) {
-  if (!d) return ''
-  const [y, m, day] = d.split('-')
-  return `${day}/${m}/${y}`
-}

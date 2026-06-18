@@ -5,7 +5,10 @@ export function useStudents(search = '') {
   const [students, setStudents] = useState([])
   const [loading,  setLoading]  = useState(true)
 
-  useEffect(() => { load() }, [search])
+  useEffect(() => {
+    const timer = setTimeout(() => load(), 300)
+    return () => clearTimeout(timer)
+  }, [search])
 
   async function load() {
     setLoading(true)

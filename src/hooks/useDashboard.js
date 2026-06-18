@@ -47,7 +47,7 @@ export function useDashboard(period = 'month') {
       // ── 3. Despesas do período
       const { data: expenses, error: expErr } = await supabase
         .from('expenses')
-        .select('cost_center_id, amount, is_general')
+        .select('id, cost_center_id, amount, is_general')
         .gte('expense_date', start)
         .lte('expense_date', end)
       if (expErr) throw expErr
