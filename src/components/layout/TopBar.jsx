@@ -3,8 +3,8 @@ import { useAuth } from '../../contexts/AuthContext'
 export default function TopBar({ onMenuClick }) {
   const { profile } = useAuth()
 
-  const initials = profile?.name
-    ? profile.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+  const initials = profile?.full_name
+    ? profile.full_name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
     : '?'
 
   return (

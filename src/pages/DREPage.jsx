@@ -39,14 +39,13 @@ export default function DREPage() {
 
     const { prevStart, prevEnd } = prevMonthRange(start)
 
+    // ── Fase 1: busca paralela sem dependência de IDs ──
     const [
       { data: ccs },
       { data: reports },
       { data: prevReports },
       { data: expenses },
       { data: prevExpenses },
-      { data: allocations },
-      { data: prevAllocations },
       { data: sponsorPayments },
       { data: prevSponsorPayments },
     ] = await Promise.all([
@@ -70,16 +69,8 @@ export default function DREPage() {
 
       // Despesas período anterior
       supabase.from('expenses')
-        .select('cost_center_id, amount, is_general')
+        .select('id, cost_center_id, amount, is_general')
         .gte('expense_date', prevStart).lte('expense_date', prevEnd),
-
-      // Rateio período atual
-      supabase.from('expense_allocations')
-        .select('cost_center_id, amount, expense_id'),
-
-      // Rateio período anterior (via join)
-      supabase.from('expense_allocations')
-        .select('cost_center_id, amount, expense_id'),
 
       // Patrocínio período atual
       supabase.from('sponsor_payments')
@@ -92,9 +83,25 @@ export default function DREPage() {
         .gte('payment_date', prevStart).lte('payment_date', prevEnd),
     ])
 
-    // IDs das despesas gerais de cada período para filtrar alocações
-    const generalIds     = new Set((expenses     ?? []).filter(e => e.is_general).map(e => e.id))
-    const prevGeneralIds = new Set((prevExpenses  ?? []).filter(e => e.is_general).map(e => e.id))
+    // ── Fase 2: alocações filtradas por expense_id do período ──
+    const generalExpenseIds     = (expenses     ?? []).filter(e => e.is_general).map(e => e.id).filter(Boolean)
+    const prevGeneralExpenseIds = (prevExpenses ?? []).filter(e => e.is_general).map(e => e.id).filter(Boolean)
+
+    const [{ data: allocations }, { data: prevAllocations }] = await Promise.all([
+      generalExpenseIds.length > 0
+        ? supabase.from('expense_allocations')
+            .select('cost_center_id, amount, expense_id')
+            .in('expense_id', generalExpenseIds)
+        : Promise.resolve({ data: [] }),
+      prevGeneralExpenseIds.length > 0
+        ? supabase.from('expense_allocations')
+            .select('cost_center_id, amount, expense_id')
+            .in('expense_id', prevGeneralExpenseIds)
+        : Promise.resolve({ data: [] }),
+    ])
+
+    const generalIds     = new Set(generalExpenseIds)
+    const prevGeneralIds = new Set(prevGeneralExpenseIds)
 
     const currentAllocs = (allocations    ?? []).filter(a => generalIds.has(a.expense_id))
     const prevAllocs    = (prevAllocations ?? []).filter(a => prevGeneralIds.has(a.expense_id))
