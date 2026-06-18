@@ -7,28 +7,69 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'logo.png'],
+      includeAssets: ['logo.png', 'icons/*.png'],
       manifest: {
-        name: 'Arena Kicks',
+        name: 'Arena Kicks Jacareí',
         short_name: 'Arena Kicks',
-        description: 'Sistema de gestão Arena Kicks Jacareí',
-        theme_color: '#1a3a5c',
-        background_color: '#ffffff',
+        description: 'Sistema de gestão financeira Arena Kicks Jacareí',
+        theme_color: '#0B2238',
+        background_color: '#0B2238',
         display: 'standalone',
+        orientation: 'portrait-primary',
         start_url: '/',
+        scope: '/',
+        lang: 'pt-BR',
         icons: [
           {
-            src: 'logo.png',
+            src: '/icons/icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
-            src: 'logo.png',
+            src: '/icons/icon-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icons/icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
-      }
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        runtimeCaching: [
+          {
+            // Cache Supabase API calls por 5 minutos
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 5,
+              },
+              networkTimeoutSeconds: 10,
+            },
+          },
+          {
+            // Cache fontes Google
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+            },
+          },
+        ],
+      },
     })
   ]
 })
