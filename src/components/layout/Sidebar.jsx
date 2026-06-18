@@ -51,9 +51,9 @@ export default function Sidebar({ open, onClose }) {
             }}
           >
             <img
-              src="/logo.png"
+              src="/logo-nav.png"
               alt="Arena Kicks"
-              style={{ width: '72px', height: '72px', objectFit: 'contain', display: 'block' }}
+              style={{ width: '72px', height: '72px', objectFit: 'contain', display: 'block', borderRadius: '12px' }}
             />
           </div>
 

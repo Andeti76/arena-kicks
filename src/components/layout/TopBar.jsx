@@ -23,9 +23,9 @@ export default function TopBar({ onMenuClick }) {
       {/* Logo centralizado */}
       <div className="flex-1 flex items-center justify-center">
         <img
-          src="/logo.png"
+          src="/logo-nav.png"
           alt="Arena Kicks"
-          className="h-8 object-contain drop-shadow"
+          className="h-9 w-9 object-contain rounded-xl"
           onError={e => { e.target.style.display = 'none' }}
         />
       </div>
