@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useDashboard } from '../hooks/useDashboard'
 import CCCard from '../components/dashboard/CCCard'
+import FinancialChart from '../components/dashboard/FinancialChart'
 import { fmt, fmtDate } from '../lib/format'
 
 const PERIODS = [
@@ -203,6 +204,11 @@ export default function DashboardPage() {
               </p>
             </div>
           )}
+
+          {/* ── Gráfico de evolução ── */}
+          <div style={{ marginBottom: '20px' }}>
+            <FinancialChart />
+          </div>
 
           {/* ── Alerta patrocinadores em atraso ── */}
           {overdueSponsors.length > 0 && (

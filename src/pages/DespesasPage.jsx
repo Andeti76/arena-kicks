@@ -132,7 +132,7 @@ export default function DespesasPage() {
     setError(null)
     setSuccess(false)
 
-    const payload = {
+    const expensePayload = {
       expense_date:   form.expense_date,
       cost_center_id: form.is_general ? null : (form.cost_center_id || null),
       sub_area_id:    form.sub_area_id || null,
@@ -146,27 +146,23 @@ export default function DespesasPage() {
       created_by:     user?.id,
     }
 
-    const { data: inserted, error: errIns } = await supabase
-      .from('expenses')
-      .insert(payload)
-      .select('id')
-      .single()
+    const allocPayload = form.is_general
+      ? costCenters
+          .filter(cc => parseFloat(alloc[cc.id] || 0) > 0)
+          .map(cc => ({
+            cost_center_id: cc.id,
+            percentage:     parseFloat(alloc[cc.id]),
+            amount:         parseFloat(((parseFloat(alloc[cc.id]) / 100) * parseFloat(form.amount)).toFixed(2)),
+          }))
+      : []
 
-    if (errIns) { setSaving(false); setError(errIns.message); return }
+    // RPC atômica — despesa + rateio em uma única transação
+    const { error: errRpc } = await supabase.rpc('insert_expense_with_allocations', {
+      p_expense:     expensePayload,
+      p_allocations: allocPayload,
+    })
 
-    // Salva rateio se for geral
-    if (form.is_general && inserted?.id) {
-      const amt = parseFloat(form.amount)
-      const allocRows = costCenters
-        .filter(cc => parseFloat(alloc[cc.id] || 0) > 0)
-        .map(cc => ({
-          expense_id:     inserted.id,
-          cost_center_id: cc.id,
-          percentage:     parseFloat(alloc[cc.id]),
-          amount:         parseFloat(((parseFloat(alloc[cc.id]) / 100) * amt).toFixed(2)),
-        }))
-      await supabase.from('expense_allocations').insert(allocRows)
-    }
+    if (errRpc) { setSaving(false); setError(errRpc.message); return }
 
     setSaving(false)
     setSuccess(true)
