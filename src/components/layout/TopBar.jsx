@@ -22,12 +22,21 @@ export default function TopBar({ onMenuClick }) {
 
       {/* Logo centralizado */}
       <div className="flex-1 flex items-center justify-center">
-        <img
-          src="/logo-nav.png"
-          alt="Arena Kicks"
-          className="h-9 w-9 object-contain rounded-xl"
-          onError={e => { e.target.style.display = 'none' }}
-        />
+        <div style={{
+          width: '38px',
+          height: '38px',
+          borderRadius: '50%',
+          overflow: 'hidden',
+          border: '1.5px solid rgba(201,154,46,0.55)',
+          flexShrink: 0,
+        }}>
+          <img
+            src="/logo.png"
+            alt="Arena Kicks"
+            style={{ width: '38px', height: '38px', objectFit: 'cover' }}
+            onError={e => { e.currentTarget.parentElement.style.display = 'none' }}
+          />
+        </div>
       </div>
 
       {/* Avatar do usuário */}
