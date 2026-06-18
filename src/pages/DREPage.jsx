@@ -1,15 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-const fmt = (v) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0)
-
-function fmtDate(d) {
-  if (!d) return ''
-  const [y, m, day] = d.split('-')
-  return `${day}/${m}/${y}`
-}
+import { fmt, fmtDate } from '../lib/format'
 
 const now = new Date()
 const DEFAULT_START = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`

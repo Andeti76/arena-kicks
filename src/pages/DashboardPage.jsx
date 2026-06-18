@@ -1,21 +1,12 @@
 import { useState } from 'react'
 import { useDashboard } from '../hooks/useDashboard'
 import CCCard from '../components/dashboard/CCCard'
+import { fmt, fmtDate } from '../lib/format'
 
 const PERIODS = [
   { value: 'day',   label: 'Hoje' },
   { value: 'month', label: 'Este mês' },
 ]
-
-function fmt(v) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 }).format(v ?? 0)
-}
-
-function fmtDate(dateStr) {
-  if (!dateStr) return ''
-  const [y, m, d] = dateStr.split('-')
-  return `${d}/${m}/${y}`
-}
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 function Skeleton() {

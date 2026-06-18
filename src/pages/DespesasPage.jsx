@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { fmt, fmtDate } from '../lib/format'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-const fmt = (v) =>
-  Number(v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-
 const today = () => new Date().toISOString().split('T')[0]
 
 const PAYMENT_METHODS = [
@@ -469,7 +467,5 @@ export default function DespesasPage() {
 }
 
 function fmtDateBR(dateStr) {
-  if (!dateStr) return ''
-  const [y, m, d] = dateStr.split('-')
-  return `${d}/${m}/${y}`
+  return fmtDate(dateStr)
 }

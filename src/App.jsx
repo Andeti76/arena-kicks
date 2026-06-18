@@ -1,5 +1,63 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Component } from 'react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+
+// ─── Error Boundary ───────────────────────────────────────────────────────────
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error, info) {
+    console.error('[ErrorBoundary]', error, info)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#0B2238',
+          padding: '24px',
+          textAlign: 'center',
+        }}>
+          <p style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</p>
+          <h1 style={{ color: 'white', fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>
+            Algo deu errado
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginBottom: '24px', maxWidth: '360px' }}>
+            {this.state.error?.message ?? 'Erro inesperado no sistema.'}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              background: '#C99A2E',
+              color: '#0B2238',
+              border: 'none',
+              borderRadius: '10px',
+              padding: '10px 24px',
+              fontWeight: 700,
+              fontSize: '14px',
+              cursor: 'pointer',
+            }}
+          >
+            Recarregar
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 // Pages
 import LoginPage        from './pages/LoginPage'
@@ -33,6 +91,7 @@ function PublicRoute({ children }) {
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <Routes>
         {/* Pública */}
@@ -58,5 +117,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>
+    </ErrorBoundary>
   )
 }
