@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
 import { fmt, fmtDate } from '../lib/format'
 
@@ -149,9 +150,8 @@ export default function DREPage() {
     setLoading(false)
   }
 
-  async function exportExcel() {
+  function exportExcel() {
     if (!data) return
-    const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.0/package/xlsx.mjs')
     const wb = XLSX.utils.book_new()
     const aoa = [
       [`DRE Arena Kicks — ${fmtDate(data.start)} a ${fmtDate(data.end)}`],

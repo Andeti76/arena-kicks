@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { fmtDate } from '../lib/format'
 
 export default function SettingsPage() {
   return (
@@ -206,8 +207,3 @@ function Section({ title, children }) {
   )
 }
 
-function fmtDate(d) {
-  if (!d) return ''
-  const [y, m, day] = d.split('-')
-  return `${day}/${m}/${y}`
-}

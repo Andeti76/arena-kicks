@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-const fmtBRL = (v) =>
-  Number(v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+import { fmt as fmtBRL, fmtDate as fmtDateBR } from '../lib/format'
 
 const today = () => new Date().toISOString().split('T')[0]
 
@@ -456,8 +453,3 @@ export default function ConciliacaoPage() {
   )
 }
 
-function fmtDateBR(dateStr) {
-  if (!dateStr) return ''
-  const [y, m, d] = dateStr.split('-')
-  return `${d}/${m}/${y}`
-}
