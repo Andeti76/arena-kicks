@@ -55,10 +55,19 @@ export function useDashboard(period = 'month') {
       // ── 3b. Patrocínio do período
       const { data: sponsorPayments } = await supabase
         .from('sponsor_payments')
-        .select('amount')
+        .select('amount, sponsor_id')
         .gte('payment_date', start)
         .lte('payment_date', end)
       const sponsorIncome = (sponsorPayments ?? []).reduce((s, p) => s + Number(p.amount ?? 0), 0)
+
+      // ── 3c. Patrocinadores mensais em atraso
+      const { data: activeSponsors } = await supabase
+        .from('sponsors')
+        .select('id, name')
+        .eq('status', 'ativo')
+        .eq('periodicity', 'mensal')
+      const paidIds = new Set((sponsorPayments ?? []).map(p => p.sponsor_id))
+      const overdueSponsors = (activeSponsors ?? []).filter(s => !paidIds.has(s.id))
 
       // ── 4. Rateio de despesas gerais
       const generalExpenseIds = (expenses ?? [])
@@ -119,7 +128,7 @@ export function useDashboard(period = 'month') {
         statusToday:  null,
       }
 
-      setData({ cards, consolidated, sponsorIncome, period, start, end })
+      setData({ cards, consolidated, sponsorIncome, overdueSponsors, period, start, end })
     } catch (err) {
       setError(err.message)
     } finally {

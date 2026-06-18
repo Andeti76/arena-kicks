@@ -63,9 +63,10 @@ export default function DashboardPage() {
   const [period, setPeriod] = useState('month')
   const { data, loading, error, reload } = useDashboard(period)
 
-  const consolidated  = data?.consolidated
-  const sponsorIncome = data?.sponsorIncome ?? 0
-  const cards         = data?.cards ?? []
+  const consolidated    = data?.consolidated
+  const sponsorIncome   = data?.sponsorIncome ?? 0
+  const overdueSponsors = data?.overdueSponsors ?? []
+  const cards           = data?.cards ?? []
   const pendingCount  = cards.filter(c => c.statusToday === 'pending').length
   const discCount     = cards.filter(c => c.statusToday === 'discrepancy').length
 
@@ -200,6 +201,30 @@ export default function DashboardPage() {
               <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', textAlign: 'right' }}>
                 Receita não<br />operacional
               </p>
+            </div>
+          )}
+
+          {/* ── Alerta patrocinadores em atraso ── */}
+          {overdueSponsors.length > 0 && (
+            <div style={{
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '14px',
+              padding: '14px 18px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}>
+              <span style={{ fontSize: '20px' }}>⚠️</span>
+              <div>
+                <p style={{ fontSize: '13px', fontWeight: 700, color: '#b91c1c' }}>
+                  {overdueSponsors.length} patrocinador{overdueSponsors.length > 1 ? 'es' : ''} sem pagamento este mês
+                </p>
+                <p style={{ fontSize: '11px', color: '#ef4444', marginTop: '2px' }}>
+                  {overdueSponsors.map(s => s.name).join(', ')}
+                </p>
+              </div>
             </div>
           )}
 

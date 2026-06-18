@@ -61,13 +61,13 @@ export default function PatrocinadoresPage() {
     setLoading(false)
   }, [])
 
-  // ── Busca pagamentos recentes ──
+  // ── Busca pagamentos (mês atual + histórico recente) ──
   const loadPayments = useCallback(async () => {
     const { data } = await supabase
       .from('sponsor_payments')
       .select('id, payment_date, amount, notes, sponsor_id, sponsors ( name )')
       .order('payment_date', { ascending: false })
-      .limit(30)
+      .limit(100)
     setPayments(data ?? [])
   }, [])
 
@@ -174,6 +174,17 @@ export default function PatrocinadoresPage() {
   }, 0)
   const totalRecebido = payments.reduce((sum, p) => sum + Number(p.amount), 0)
 
+  // ── Patrocinadores em atraso (mensais sem pgto no mês atual) ──
+  const currentMonth = new Date().toISOString().slice(0, 7) // 'YYYY-MM'
+  const paidThisMonth = new Set(
+    payments
+      .filter(p => p.payment_date?.startsWith(currentMonth))
+      .map(p => p.sponsor_id)
+  )
+  const overdueSponsors = ativos.filter(
+    s => s.periodicity === 'mensal' && !paidThisMonth.has(s.id)
+  )
+
   // ─── Render ─────────────────────────────────────────────────────────────
   return (
     <div>
@@ -217,6 +228,22 @@ export default function PatrocinadoresPage() {
       {tab === 'lista' && (
         <div className="space-y-6 max-w-3xl">
 
+          {/* Alerta de inadimplência */}
+          {overdueSponsors.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-3">
+              <span className="text-xl">⚠️</span>
+              <div>
+                <p className="text-sm font-semibold text-red-700">
+                  {overdueSponsors.length} patrocinador{overdueSponsors.length > 1 ? 'es' : ''} sem pagamento em{' '}
+                  {new Date().toLocaleString('pt-BR', { month: 'long' })}
+                </p>
+                <p className="text-xs text-red-500 mt-0.5">
+                  {overdueSponsors.map(s => s.name).join(', ')}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* KPIs */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
@@ -254,6 +281,11 @@ export default function PatrocinadoresPage() {
                         ${sp.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                         {sp.status}
                       </span>
+                      {overdueSponsors.some(o => o.id === sp.id) && (
+                        <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
+                          ⚠️ sem pgto este mês
+                        </span>
+                      )}
                       <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                         {TYPES.find(t => t.value === sp.type)?.label ?? sp.type}
                       </span>
