@@ -31,7 +31,7 @@ export default function TopBar({ onMenuClick }) {
           flexShrink: 0,
         }}>
           <img
-            src="/logo.png"
+            src="/logo-nav.png"
             alt="Arena Kicks"
             style={{ width: '38px', height: '38px', objectFit: 'cover' }}
             onError={e => { e.currentTarget.parentElement.style.display = 'none' }}
