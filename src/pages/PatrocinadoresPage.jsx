@@ -139,6 +139,17 @@ export default function PatrocinadoresPage() {
     setTab('lista')
   }
 
+  const handleArchive = async (sp) => {
+    const newStatus = sp.status === 'ativo' ? 'inativo' : 'ativo'
+    const { error: err } = await supabase
+      .from('sponsors')
+      .update({ status: newStatus })
+      .eq('id', sp.id)
+    if (err) { setError(err.message); return }
+    await loadSponsors()
+    flash(newStatus === 'inativo' ? `"${sp.name}" arquivado.` : `"${sp.name}" reativado.`)
+  }
+
   const handleEdit = (sp) => {
     setSponsorForm({
       name:        sp.name,
@@ -260,12 +271,24 @@ export default function PatrocinadoresPage() {
                     )}
                   </div>
                   {isOwner && (
-                    <button
-                      onClick={() => handleEdit(sp)}
-                      className="text-xs text-gray-400 hover:text-kicks-navy transition-colors shrink-0 pt-0.5"
-                    >
-                      ✏️ Editar
-                    </button>
+                    <div className="flex flex-col gap-1 shrink-0 pt-0.5">
+                      <button
+                        onClick={() => handleEdit(sp)}
+                        className="text-xs text-gray-400 hover:text-kicks-navy transition-colors text-right"
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button
+                        onClick={() => handleArchive(sp)}
+                        className={`text-xs transition-colors text-right ${
+                          sp.status === 'ativo'
+                            ? 'text-gray-300 hover:text-red-400'
+                            : 'text-gray-400 hover:text-green-600'
+                        }`}
+                      >
+                        {sp.status === 'ativo' ? '📦 Arquivar' : '♻️ Reativar'}
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}
