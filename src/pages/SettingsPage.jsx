@@ -81,13 +81,15 @@ function UsersSection() {
 
 /* ─────────────────────────────── CONVITES ── */
 function InviteSection() {
-  const [email,   setEmail]   = useState('')
-  const [role,    setRole]    = useState('partner')
-  const [ccId,    setCcId]    = useState('')
-  const [ccs,     setCcs]     = useState([])
-  const [sending, setSending] = useState(false)
-  const [msg,     setMsg]     = useState(null)
-  const [invites, setInvites] = useState([])
+  const [email,         setEmail]         = useState('')
+  const [role,          setRole]          = useState('partner')
+  const [ccId,          setCcId]          = useState('')
+  const [ccs,           setCcs]           = useState([])
+  const [sending,       setSending]       = useState(false)
+  const [error,         setError]         = useState(null)
+  const [createdInvite, setCreatedInvite] = useState(null) // { email, link }
+  const [invites,       setInvites]       = useState([])
+  const [copied,        setCopied]        = useState(null) // id do invite copiado
 
   useEffect(() => {
     supabase.from('cost_centers').select('id, name').eq('is_active', true).order('sort_order')
@@ -98,31 +100,55 @@ function InviteSection() {
   async function loadInvites() {
     const { data } = await supabase
       .from('invites')
-      .select('id, email, role, cost_center_id, expires_at, accepted_at, cost_centers(name)')
+      .select('id, email, role, token, expires_at, accepted_at, cost_centers(name)')
       .is('accepted_at', null)
       .order('created_at', { ascending: false })
     setInvites(data || [])
+  }
+
+  function inviteLink(token) {
+    return `${window.location.origin}/convite?token=${token}`
+  }
+
+  async function copyLink(token, id) {
+    await navigator.clipboard.writeText(inviteLink(token))
+    setCopied(id)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  function openEmail(inv) {
+    const link  = inviteLink(inv.token ?? inv.linkToken)
+    const name  = inv.email.split('@')[0]
+    const subj  = encodeURIComponent('Você foi convidado para o Arena Kicks')
+    const body  = encodeURIComponent(
+      `Olá${name ? ' ' + name : ''},\n\nVocê foi convidado para acessar o sistema Arena Kicks Jacareí.\n\nClique no link abaixo para criar sua conta:\n${link}\n\nO link expira em 7 dias.\n\nArena Kicks Jacareí`
+    )
+    window.open(`mailto:${inv.email}?subject=${subj}&body=${body}`)
   }
 
   async function sendInvite(e) {
     e.preventDefault()
     if (!email) return
     setSending(true)
-    setMsg(null)
+    setError(null)
+    setCreatedInvite(null)
 
     try {
       const payload = {
-        email: email.toLowerCase().trim(),
+        email:          email.toLowerCase().trim(),
         role,
         cost_center_id: role === 'area_manager' ? ccId || null : null,
       }
-      const { error } = await supabase.from('invites').insert(payload)
-      if (error) throw error
-      setMsg({ type: 'success', text: `Convite registrado para ${email}. Compartilhe o acesso com o usuário.` })
+      const { data, error: err } = await supabase
+        .from('invites').insert(payload).select('token').single()
+      if (err) throw err
+
+      setCreatedInvite({ email: payload.email, token: data.token, linkToken: data.token })
       setEmail('')
+      setCcId('')
       loadInvites()
     } catch (err) {
-      setMsg({ type: 'error', text: err.message })
+      setError(err.message)
     } finally {
       setSending(false)
     }
@@ -130,6 +156,7 @@ function InviteSection() {
 
   async function revokeInvite(id) {
     await supabase.from('invites').delete().eq('id', id)
+    if (createdInvite) setCreatedInvite(null)
     loadInvites()
   }
 
@@ -163,14 +190,45 @@ function InviteSection() {
           )}
         </div>
 
-        {msg && (
-          <p className={`text-sm ${msg.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>{msg.text}</p>
+        {error && (
+          <p className="text-sm text-red-500">{error}</p>
         )}
 
         <button type="submit" disabled={sending} className="btn-primary">
-          {sending ? 'Registrando...' : 'Registrar convite'}
+          {sending ? 'Gerando...' : 'Gerar convite'}
         </button>
       </form>
+
+      {/* Link gerado após criar convite */}
+      {createdInvite && (
+        <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-semibold text-green-800">
+            ✅ Convite criado para <span className="font-bold">{createdInvite.email}</span>
+          </p>
+          <p className="text-xs text-green-700">
+            Copie o link abaixo e envie para o usuário. Ao abrir, ele poderá criar a senha e acessar o sistema.
+          </p>
+          <div className="flex items-center gap-2 bg-white border border-green-200 rounded-lg px-3 py-2">
+            <p className="text-xs text-gray-600 flex-1 truncate font-mono">
+              {inviteLink(createdInvite.token)}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => copyLink(createdInvite.token, 'new')}
+              className="flex-1 text-sm font-medium bg-kicks-navy text-white rounded-lg py-2 hover:bg-kicks-navy/90 transition-colors"
+            >
+              {copied === 'new' ? '✅ Copiado!' : '📋 Copiar link'}
+            </button>
+            <button
+              onClick={() => openEmail(createdInvite)}
+              className="flex-1 text-sm font-medium border border-kicks-navy text-kicks-navy rounded-lg py-2 hover:bg-gray-50 transition-colors"
+            >
+              ✉️ Abrir e-mail
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Convites pendentes */}
       {invites.length > 0 && (
@@ -178,17 +236,35 @@ function InviteSection() {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Convites pendentes</p>
           <div className="space-y-2">
             {invites.map(inv => (
-              <div key={inv.id} className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-700">{inv.email}</p>
-                  <p className="text-xs text-gray-400">
-                    {ROLE_LABEL[inv.role]}
-                    {inv.cost_centers && ` — ${inv.cost_centers.name}`}
-                    {' • '}Expira {fmtDate(inv.expires_at?.split('T')[0])}
-                  </p>
+              <div key={inv.id} className="bg-gray-50 rounded-xl border border-gray-100 px-4 py-3 space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-700">{inv.email}</p>
+                    <p className="text-xs text-gray-400">
+                      {ROLE_LABEL[inv.role]}
+                      {inv.cost_centers && ` — ${inv.cost_centers.name}`}
+                      {' • '}Expira {fmtDate(inv.expires_at?.split('T')[0])}
+                    </p>
+                  </div>
+                  <button onClick={() => revokeInvite(inv.id)}
+                    className="text-xs text-red-400 hover:text-red-600 transition-colors shrink-0">
+                    Revogar
+                  </button>
                 </div>
-                <button onClick={() => revokeInvite(inv.id)}
-                  className="text-xs text-red-400 hover:text-red-600 transition-colors">Revogar</button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => copyLink(inv.token, inv.id)}
+                    className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg px-3 py-1.5 transition-colors"
+                  >
+                    {copied === inv.id ? '✅ Copiado!' : '📋 Copiar link'}
+                  </button>
+                  <button
+                    onClick={() => openEmail(inv)}
+                    className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg px-3 py-1.5 transition-colors"
+                  >
+                    ✉️ Abrir e-mail
+                  </button>
+                </div>
               </div>
             ))}
           </div>
