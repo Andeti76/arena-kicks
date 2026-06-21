@@ -10,6 +10,7 @@ import {
   Legend,
 } from 'recharts'
 import { useFinancialChart } from '../../hooks/useFinancialChart'
+import Icon from '../ui/Icon'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function fmtK(v) {
@@ -80,7 +81,7 @@ export default function FinancialChart() {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <div style={{ textAlign: 'center', color: '#9ca3af' }}>
-        <div style={{ fontSize: '24px', marginBottom: '8px' }}>📊</div>
+        <Icon name="chart" size={24} className="mx-auto mb-2" />
         <p style={{ fontSize: '13px' }}>Carregando dados...</p>
       </div>
     </div>
@@ -97,7 +98,7 @@ export default function FinancialChart() {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <div style={{ textAlign: 'center', color: '#9ca3af' }}>
-        <div style={{ fontSize: '28px', marginBottom: '8px' }}>📈</div>
+        <Icon name="chart" size={28} className="mx-auto mb-2" />
         <p style={{ fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>Sem dados suficientes</p>
         <p style={{ fontSize: '12px', marginTop: '4px' }}>Lance despesas e conciliações para ver a evolução.</p>
       </div>

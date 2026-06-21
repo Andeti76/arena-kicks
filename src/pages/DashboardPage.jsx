@@ -2,272 +2,203 @@ import { useState } from 'react'
 import { useDashboard } from '../hooks/useDashboard'
 import CCCard from '../components/dashboard/CCCard'
 import FinancialChart from '../components/dashboard/FinancialChart'
+import Icon from '../components/ui/Icon'
 import { fmt, fmtDate } from '../lib/format'
 
 const PERIODS = [
-  { value: 'day',   label: 'Hoje' },
+  { value: 'day', label: 'Hoje' },
   { value: 'month', label: 'Este mês' },
 ]
 
-// ── Skeleton ──────────────────────────────────────────────────────────────────
 function Skeleton() {
   return (
-    <div style={{ animation: 'pulse 1.5s ease-in-out infinite' }}>
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }`}</style>
-      {/* Hero skeleton */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px', marginBottom: '32px' }}>
-        {[1,2,3,4].map(i => (
-          <div key={i} style={{ height: '96px', borderRadius: '20px', background: '#e5e7eb' }} />
-        ))}
+    <div className="animate-pulse space-y-5">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        {[1, 2, 3, 4].map(item => <div key={item} className="h-32 rounded-[20px] bg-slate-200/70" />)}
       </div>
-      {/* Cards skeleton */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '16px' }}>
-        {[1,2,3,4].map(i => (
-          <div key={i} style={{ height: '160px', borderRadius: '20px', background: '#e5e7eb' }} />
-        ))}
+      <div className="h-72 rounded-[22px] bg-slate-200/70" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[1, 2, 3, 4].map(item => <div key={item} className="h-44 rounded-[20px] bg-slate-200/70" />)}
       </div>
     </div>
   )
 }
 
-// ── KPI Box ───────────────────────────────────────────────────────────────────
-function KpiBox({ label, value, color, icon, sub }) {
+function KpiBox({ label, value, tone, icon, sub, delay = 0 }) {
+  const tones = {
+    green: { color: '#07875e', soft: '#eaf8f2' },
+    red: { color: '#cf3f47', soft: '#fff0f1' },
+    navy: { color: '#0B2238', soft: '#eef4f8' },
+    gold: { color: '#9C7220', soft: '#fbf5e8' },
+  }
+  const palette = tones[tone] ?? tones.navy
+
   return (
-    <div style={{
-      background: 'white',
-      borderRadius: '20px',
-      padding: '20px',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '6px',
-      borderTop: `3px solid ${color}`,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '11px', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-          {label}
+    <div
+      className="reveal-card premium-card-hover group relative overflow-hidden rounded-[20px] border border-[#0f2b43]/[.08] bg-white/95 p-5 shadow-[0_12px_35px_rgba(11,34,56,.055)]"
+      style={{ '--reveal-delay': `${delay}ms` }}
+    >
+      <span className="absolute inset-x-0 top-0 h-[3px]" style={{ background: palette.color }} />
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-extrabold uppercase tracking-[.13em] text-slate-400">{label}</p>
+          <p className="mt-3 text-[24px] font-black leading-none tracking-[-.045em]" style={{ color: palette.color }}>
+            {value}
+          </p>
+          {sub && <p className="mt-3 text-[11px] font-medium text-slate-400">{sub}</p>}
+        </div>
+        <span className="icon-live flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ color: palette.color, background: palette.soft }}>
+          <Icon name={icon} size={19} />
         </span>
-        <span style={{ fontSize: '20px' }}>{icon}</span>
       </div>
-      <p style={{ fontSize: '22px', fontWeight: 800, color, letterSpacing: '-0.5px', lineHeight: 1 }}>
-        {value}
-      </p>
-      {sub && (
-        <p style={{ fontSize: '11px', color: '#9ca3af' }}>{sub}</p>
-      )}
     </div>
   )
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const [period, setPeriod] = useState('month')
   const { data, loading, error, reload } = useDashboard(period)
 
-  const consolidated    = data?.consolidated
-  const sponsorIncome   = data?.sponsorIncome ?? 0
+  const consolidated = data?.consolidated
+  const sponsorIncome = data?.sponsorIncome ?? 0
   const overdueSponsors = data?.overdueSponsors ?? []
-  const cards           = data?.cards ?? []
-  const pendingCount  = cards.filter(c => c.statusToday === 'pending').length
-  const discCount     = cards.filter(c => c.statusToday === 'discrepancy').length
+  const cards = data?.cards ?? []
+  const pendingCount = cards.filter(card => card.statusToday === 'pending').length
+  const discCount = cards.filter(card => card.statusToday === 'discrepancy').length
 
   const periodLabel = period === 'day'
     ? `Hoje — ${fmtDate(data?.start)}`
     : data ? `${fmtDate(data.start)} a ${fmtDate(data.end)}` : ''
 
   return (
-    <div>
-      {/* ── Header ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div className="page-shell">
+      <div className="page-header">
         <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0B2238', letterSpacing: '-0.5px' }}>
-            Arena Kicks — Painel
-          </h1>
-          <p style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-            {periodLabel || 'Carregando período...'}
-          </p>
+          <p className="page-eyebrow">Centro de comando</p>
+          <h1 className="page-title">Visão geral da operação</h1>
+          <p className="page-subtitle">{periodLabel || 'Preparando os indicadores do período...'}</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {PERIODS.map(p => (
+        <div className="flex items-center gap-2 rounded-2xl border border-[#0f2b43]/[.08] bg-white/70 p-1.5 shadow-sm backdrop-blur-sm">
+          {PERIODS.map(option => (
             <button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
-              className={period === p.value ? 'tab-btn tab-btn-active' : 'tab-btn tab-btn-inactive'}
+              key={option.value}
+              onClick={() => setPeriod(option.value)}
+              className={period === option.value ? 'tab-btn tab-btn-active' : 'tab-btn tab-btn-inactive'}
             >
-              {p.label}
+              {option.label}
             </button>
           ))}
-          <button
-            onClick={reload}
-            title="Atualizar"
-            style={{
-              width: '36px', height: '36px',
-              borderRadius: '10px',
-              border: '1px solid #e5e7eb',
-              background: 'white',
-              fontSize: '16px',
-              cursor: 'pointer',
-              color: '#6b7280',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'border-color 0.15s, color 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#0B2238'; e.currentTarget.style.color = '#0B2238' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = '#6b7280' }}
-          >
-            ↻
+          <button onClick={reload} title="Atualizar indicadores" className="icon-button ml-1">
+            <Icon name="refresh" size={17} />
           </button>
         </div>
       </div>
 
-      {/* ── Loading ── */}
       {loading && <Skeleton />}
 
-      {/* ── Erro ── */}
       {error && (
-        <div style={{
-          background: '#fef2f2', border: '1px solid #fecaca',
-          borderRadius: '12px', padding: '16px',
-          color: '#dc2626', fontSize: '14px',
-        }}>
-          ⚠️ Erro ao carregar: {error}
+        <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600">
+          <Icon name="alert" size={19} />
+          Erro ao carregar: {error}
         </div>
       )}
 
-      {/* ── Conteúdo ── */}
       {!loading && !error && data && (
         <>
-          {/* ── Hero: KPIs ── */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '12px',
-            marginBottom: '12px',
-          }}
-          className="sm:grid-cols-4"
-          >
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
             <KpiBox
-              label="Receita Operacional"
+              label="Receita operacional"
               value={fmt(consolidated?.income)}
-              color="#059669"
-              icon="💰"
-              sub={period === 'month' ? 'no mês' : 'hoje'}
+              tone="green"
+              icon="income"
+              sub={period === 'month' ? 'Movimentação no mês' : 'Movimentação de hoje'}
+              delay={40}
             />
             <KpiBox
-              label="Despesa"
+              label="Despesas"
               value={fmt(consolidated?.expense)}
-              color="#dc2626"
-              icon="📤"
-              sub={period === 'month' ? 'no mês' : 'hoje'}
+              tone="red"
+              icon="expense"
+              sub={period === 'month' ? 'Acumulado no mês' : 'Lançamentos de hoje'}
+              delay={110}
             />
             <KpiBox
               label="Resultado"
               value={fmt(consolidated?.result)}
-              color={consolidated?.result >= 0 ? '#059669' : '#dc2626'}
-              icon={consolidated?.result >= 0 ? '📈' : '📉'}
-              sub="op. + patroc. − despesa"
+              tone={consolidated?.result >= 0 ? 'navy' : 'red'}
+              icon="chart"
+              sub="Operação + patrocínio − despesas"
+              delay={180}
             />
             <KpiBox
-              label="Atenção"
+              label="Status da operação"
               value={discCount > 0 ? `${discCount} área${discCount > 1 ? 's' : ''}` : pendingCount > 0 ? `${pendingCount} pend.` : 'Tudo OK'}
-              color={discCount > 0 ? '#ef4444' : pendingCount > 0 ? '#f59e0b' : '#059669'}
-              icon={discCount > 0 ? '⚠️' : pendingCount > 0 ? '🕐' : '✅'}
-              sub={discCount > 0 ? 'com divergência' : pendingCount > 0 ? 'sem conciliação' : 'conciliado'}
+              tone={discCount > 0 ? 'red' : pendingCount > 0 ? 'gold' : 'green'}
+              icon={discCount > 0 ? 'alert' : 'shield'}
+              sub={discCount > 0 ? 'Com divergência' : pendingCount > 0 ? 'Aguardando conciliação' : 'Operação conciliada'}
+              delay={250}
             />
           </div>
 
-          {/* ── Patrocínio (separado) ── */}
           {sponsorIncome > 0 && (
-            <div style={{
-              background: 'linear-gradient(135deg, #0B2238, #0d3050)',
-              borderRadius: '16px',
-              padding: '16px 20px',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '22px' }}>🤝</span>
-                <div>
-                  <p style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    Patrocínio {period === 'month' ? 'no mês' : 'hoje'}
-                  </p>
-                  <p style={{ fontSize: '20px', fontWeight: 800, color: '#C99A2E', letterSpacing: '-0.5px' }}>
-                    {fmt(sponsorIncome)}
-                  </p>
+            <div className="reveal-card premium-card-hover relative overflow-hidden rounded-[20px] border border-white/[.08] bg-gradient-to-br from-kicks-navy to-kicks-navy-light px-5 py-4 shadow-[0_18px_45px_rgba(11,34,56,.18)]" style={{ '--reveal-delay': '310ms' }}>
+              <div className="absolute -right-10 -top-16 h-40 w-40 rounded-full border border-kicks-gold/20" />
+              <div className="relative flex items-center justify-between gap-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-kicks-gold/15 text-kicks-gold-light">
+                    <Icon name="sponsors" size={21} />
+                  </span>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[.15em] text-white/45">
+                      Patrocínio {period === 'month' ? 'no mês' : 'hoje'}
+                    </p>
+                    <p className="mt-1 text-xl font-black tracking-[-.04em] text-kicks-gold-light">{fmt(sponsorIncome)}</p>
+                  </div>
                 </div>
+                <p className="hidden text-right text-[10px] font-semibold uppercase tracking-[.13em] text-white/30 sm:block">
+                  Receita<br />não operacional
+                </p>
               </div>
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', textAlign: 'right' }}>
-                Receita não<br />operacional
-              </p>
             </div>
           )}
 
-          {/* ── Gráfico de evolução ── */}
-          <div style={{ marginBottom: '20px' }}>
-            <FinancialChart />
-          </div>
+          <FinancialChart />
 
-          {/* ── Alerta patrocinadores em atraso ── */}
           {overdueSponsors.length > 0 && (
-            <div style={{
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: '14px',
-              padding: '14px 18px',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-            }}>
-              <span style={{ fontSize: '20px' }}>⚠️</span>
+            <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
+              <span className="mt-0.5 text-red-500"><Icon name="alert" size={19} /></span>
               <div>
-                <p style={{ fontSize: '13px', fontWeight: 700, color: '#b91c1c' }}>
+                <p className="text-sm font-bold text-red-700">
                   {overdueSponsors.length} patrocinador{overdueSponsors.length > 1 ? 'es' : ''} sem pagamento este mês
                 </p>
-                <p style={{ fontSize: '11px', color: '#ef4444', marginTop: '2px' }}>
-                  {overdueSponsors.map(s => s.name).join(', ')}
-                </p>
+                <p className="mt-1 text-xs text-red-500">{overdueSponsors.map(sponsor => sponsor.name).join(', ')}</p>
               </div>
             </div>
           )}
 
-          {/* ── Divisor ── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '1px', whiteSpace: 'nowrap' }}>
-              Por área
-            </span>
-            <div style={{ flex: 1, height: '1px', background: '#f3f4f6' }} />
+          <div className="flex items-center gap-4 pt-1">
+            <div>
+              <p className="page-eyebrow mb-0">Detalhamento</p>
+              <h2 className="text-lg font-extrabold text-kicks-navy">Desempenho por área</h2>
+            </div>
+            <span className="h-px flex-1 bg-[#0f2b43]/[.08]" />
           </div>
 
-          {/* ── Cards por CC ── */}
           {cards.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: '#9ca3af' }}>
-              <p style={{ fontSize: '40px', marginBottom: '12px' }}>📊</p>
-              <p style={{ fontWeight: 600, color: '#6b7280' }}>Nenhum dado encontrado</p>
-              <p style={{ fontSize: '13px', marginTop: '4px' }}>Comece lançando conciliações e despesas.</p>
+            <div className="panel py-14 text-center">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                <Icon name="chart" size={23} />
+              </span>
+              <p className="mt-4 font-bold text-slate-600">Nenhum dado encontrado</p>
+              <p className="mt-1 text-sm text-slate-400">Comece lançando conciliações e despesas.</p>
             </div>
           ) : (
             <>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(1, 1fr)',
-                gap: '12px',
-                marginBottom: '12px',
-              }}
-              className="sm:grid-cols-2 xl:grid-cols-4"
-              >
-                {cards.map(cc => (
-                  <CCCard key={cc.id} cc={cc} />
-                ))}
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {cards.map(costCenter => <CCCard key={costCenter.id} cc={costCenter} />)}
               </div>
-
-              {/* ── Consolidado ── */}
-              <div style={{ marginTop: '4px' }}>
-                <CCCard cc={consolidated} highlight />
-              </div>
+              <CCCard cc={consolidated} highlight />
             </>
           )}
         </>

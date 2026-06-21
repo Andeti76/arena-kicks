@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
 import { fmt, fmtDate } from '../lib/format'
+import Icon from '../components/ui/Icon'
 
 const now = new Date()
 const DEFAULT_START = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
@@ -179,25 +180,26 @@ export default function DREPage() {
 
   // ─── Render ─────────────────────────────────────────────────────────────
   return (
-    <div>
+    <div className="page-shell">
       {/* Cabeçalho */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-kicks-navy">DRE</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Demonstrativo de resultado por área</p>
+          <p className="page-eyebrow">Inteligência financeira</p>
+          <h1 className="page-title">DRE</h1>
+          <p className="page-subtitle">Demonstrativo de resultado por área</p>
         </div>
         <div className="flex gap-2">
           <button onClick={exportExcel} className="btn-secondary text-sm flex items-center gap-1.5">
-            📊 Excel
+            <Icon name="spreadsheet" size={16} /> Excel
           </button>
           <button onClick={exportPDF} className="btn-secondary text-sm flex items-center gap-1.5">
-            📄 PDF
+            <Icon name="file" size={16} /> PDF
           </button>
         </div>
       </div>
 
       {/* Filtro de período */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6 flex gap-4 flex-wrap items-end">
+      <div className="panel flex flex-wrap items-end gap-4">
         <div>
           <label className="label">De</label>
           <input type="date" value={start} onChange={e => setStart(e.target.value)} className="input w-40" />
@@ -224,7 +226,9 @@ export default function DREPage() {
 
           {/* Consolidado */}
           <div className="bg-kicks-navy text-white rounded-xl p-5 mb-4">
-            <p className="text-sm font-semibold text-white/70 mb-3">🏆 Arena Kicks — Consolidado</p>
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-white/70">
+              <Icon name="areas" size={16} /> Arena Kicks — Consolidado
+            </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <KpiBox
                 label="Receita Operacional"
@@ -292,7 +296,7 @@ export default function DREPage() {
                 {data.consolidated.sponsorIncome > 0 && (
                   <tr className="bg-amber-50/60 border-t border-amber-100">
                     <td className="px-4 py-3 font-medium text-amber-700 flex items-center gap-1.5">
-                      🤝 Patrocínio
+                      <span className="flex items-center gap-2"><Icon name="sponsors" size={15} /> Patrocínio</span>
                     </td>
                     <td className="px-4 py-3 text-right text-amber-600 font-semibold">
                       {fmt(data.consolidated.sponsorIncome)}

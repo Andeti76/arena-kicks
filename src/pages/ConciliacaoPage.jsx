@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { fmt as fmtBRL, fmtDate as fmtDateBR } from '../lib/format'
+import Icon from '../components/ui/Icon'
 
 const today = () => new Date().toISOString().split('T')[0]
 
@@ -40,9 +41,12 @@ function LivePanel({ sysTotal, maqTotal, cashCounted, previewStatus, diffDebit, 
     }}>
       {/* Status principal */}
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <div style={{ fontSize: '40px', marginBottom: '8px', lineHeight: 1 }}>
-          {isOk ? '✅' : isDisc ? '⚠️' : '🕐'}
-        </div>
+        <span
+          className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl"
+          style={{ color: panelColor, background: `${panelColor}12` }}
+        >
+          <Icon name={isOk ? 'check' : isDisc ? 'alert' : 'clock'} size={24} />
+        </span>
         <p style={{ fontWeight: 800, fontSize: '16px', color: panelColor }}>
           {isOk ? 'Valores conferem!' : isDisc ? 'Divergência detectada' : 'Aguardando dados...'}
         </p>
@@ -59,20 +63,20 @@ function LivePanel({ sysTotal, maqTotal, cashCounted, previewStatus, diffDebit, 
           label="Total Sistema"
           value={fmtBRL(sysTotal)}
           color="#0B2238"
-          icon="💻"
+          icon="monitor"
         />
         <PanelRow
           label="Total Maquininha"
           value={fmtBRL(maqTotal)}
           color="#0B2238"
-          icon="🖨️"
+          icon="printer"
         />
         {Number(cashCounted) > 0 && (
           <PanelRow
             label="Dinheiro Físico"
             value={fmtBRL(cashCounted)}
             color="#0B2238"
-            icon="💵"
+            icon="cash"
           />
         )}
         <div style={{ height: '1px', background: panelBorder, margin: '4px 0' }} />
@@ -80,7 +84,7 @@ function LivePanel({ sysTotal, maqTotal, cashCounted, previewStatus, diffDebit, 
           label="Diferença"
           value={fmtBRL(diff)}
           color={diff < 0.01 ? '#059669' : '#dc2626'}
-          icon={diff < 0.01 ? '✔' : '✖'}
+          icon={diff < 0.01 ? 'check' : 'alert'}
           bold
         />
       </div>
@@ -111,7 +115,7 @@ function PanelRow({ label, value, color, icon, bold }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <span style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <span>{icon}</span> {label}
+        <Icon name={icon} size={15} /> {label}
       </span>
       <span style={{ fontSize: '14px', fontWeight: bold ? 800 : 600, color, letterSpacing: '-0.3px' }}>
         {value}
@@ -235,16 +239,13 @@ export default function ConciliacaoPage() {
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div>
+    <div className="page-shell">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="page-header">
         <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0B2238', letterSpacing: '-0.5px' }}>
-            Conciliação Diária
-          </h1>
-          <p style={{ fontSize: '13px', color: '#9ca3af', marginTop: '2px' }}>
-            Sistema vs maquininha vs dinheiro físico
-          </p>
+          <p className="page-eyebrow">Controle diário</p>
+          <h1 className="page-title">Conciliação Diária</h1>
+          <p className="page-subtitle">Sistema vs maquininha vs dinheiro físico</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           {['form', 'history'].map(t => (
@@ -468,4 +469,3 @@ export default function ConciliacaoPage() {
     </div>
   )
 }
-

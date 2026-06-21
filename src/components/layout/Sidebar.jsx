@@ -1,14 +1,15 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import Icon from '../ui/Icon'
 
 const navItems = [
-  { to: '/',                label: 'Dashboard',      icon: '📊' },
-  { to: '/conciliacao',     label: 'Conciliação',    icon: '✅' },
-  { to: '/despesas',        label: 'Despesas',       icon: '💸' },
-  { to: '/eventos',         label: 'Sub-Áreas',      icon: '🏆' },
-  { to: '/patrocinadores',  label: 'Patrocinadores', icon: '🤝' },
-  { to: '/dre',             label: 'DRE',            icon: '📈' },
-  { to: '/configuracoes',   label: 'Configurações',  icon: '⚙️', partnerOnly: true },
+  { to: '/', label: 'Dashboard', icon: 'dashboard' },
+  { to: '/conciliacao', label: 'Conciliação', icon: 'reconcile' },
+  { to: '/despesas', label: 'Despesas', icon: 'expense' },
+  { to: '/eventos', label: 'Sub-Áreas', icon: 'areas' },
+  { to: '/patrocinadores', label: 'Patrocinadores', icon: 'sponsors' },
+  { to: '/dre', label: 'DRE', icon: 'chart' },
+  { to: '/configuracoes', label: 'Configurações', icon: 'settings', partnerOnly: true },
 ]
 
 export default function Sidebar({ open, onClose }) {
@@ -16,63 +17,68 @@ export default function Sidebar({ open, onClose }) {
 
   return (
     <>
-      {/* Overlay mobile */}
       {open && (
         <div
-          className="fixed inset-0 z-20 bg-black/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-20 bg-[#071827]/70 backdrop-blur-sm md:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`
-          fixed z-30 inset-y-0 left-0 w-64 flex flex-col
-          transform transition-transform duration-200
+          fixed inset-y-0 left-0 z-30 flex w-[272px] flex-col
+          transform overflow-hidden transition-transform duration-300
           ${open ? 'translate-x-0' : '-translate-x-full'}
-          md:relative md:translate-x-0 md:flex
+          md:relative md:flex md:translate-x-0
         `}
         style={{
-          background: 'linear-gradient(180deg, #0B2238 0%, #0d2940 60%, #0a1e30 100%)',
-          borderRight: '1px solid rgba(255,255,255,0.06)',
+          background:
+            'radial-gradient(circle at 50% -5%, rgba(201,154,46,.20), transparent 25%), linear-gradient(180deg, #0B2238 0%, #081D30 64%, #071827 100%)',
+          borderRight: '1px solid rgba(255,255,255,.06)',
+          boxShadow: '16px 0 50px rgba(7,24,39,.12)',
         }}
       >
-        {/* ── Logo ── */}
-        <div className="flex flex-col items-center px-6 pt-7 pb-6">
-          {/* Logo circle */}
-          <div style={{ marginBottom: '12px' }}>
-            <img
-              src="/logo2.png"
-              alt="Arena Kicks"
-              style={{ width: '80px', height: '80px', objectFit: 'contain', display: 'block', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))' }}
-            />
-          </div>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[.035]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.8) 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+          }}
+        />
 
-          {/* Nome */}
-          <p className="text-white font-bold text-base leading-tight tracking-tight">
-            Arena Kicks
-          </p>
-          <p
-            style={{
-              color: '#C99A2E',
-              fontSize: '11px',
-              letterSpacing: '2px',
-              textTransform: 'uppercase',
-              marginTop: '3px',
-            }}
-          >
-            Jacareí
-          </p>
+        <div className="relative px-5 pb-5 pt-6">
+          <div className="flex items-center gap-3 rounded-2xl border border-white/[.08] bg-white/[.045] p-3.5">
+            <div className="relative shrink-0">
+              <div className="absolute inset-2 rounded-full bg-kicks-gold/25 blur-xl" />
+              <img
+                src="/logo2.png"
+                alt="Arena Kicks"
+                className="relative h-[68px] w-[68px] object-contain drop-shadow-[0_8px_14px_rgba(0,0,0,.4)]"
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[.2em] text-kicks-gold-light">
+                Andeti apresenta
+              </p>
+              <p className="mt-1 text-[17px] font-extrabold leading-tight text-white">Arena Kicks</p>
+              <p className="mt-0.5 text-[11px] font-medium tracking-wide text-white/45">Gestão Jacareí</p>
+            </div>
+          </div>
         </div>
 
-        {/* ── Divisor ── */}
-        <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', margin: '0 20px 16px' }} />
+        <div className="relative mx-5 mb-4 flex items-center gap-2">
+          <span className="h-px flex-1 bg-white/[.08]" />
+          <span className="text-[9px] font-bold uppercase tracking-[.18em] text-white/25">Central de gestão</span>
+          <span className="h-px flex-1 bg-white/[.08]" />
+        </div>
 
-        {/* ── Nav ── */}
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+        <nav className="relative flex-1 space-y-1 overflow-y-auto px-3">
           {navItems.map(item => {
             if (item.ownerOnly && !isOwner) return null
             if (item.partnerOnly && !isPartner) return null
+
             return (
               <NavLink
                 key={item.to}
@@ -80,43 +86,27 @@ export default function Sidebar({ open, onClose }) {
                 end={item.to === '/'}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 relative
-                  ${isActive
-                    ? 'text-white'
-                    : 'text-white/55 hover:text-white/90 hover:bg-white/06'
+                  `group relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition-all duration-200 ${
+                    isActive
+                      ? 'text-white'
+                      : 'text-white/52 hover:bg-white/[.055] hover:text-white/90'
                   }`
                 }
                 style={({ isActive }) => isActive ? {
-                  background: 'linear-gradient(135deg, rgba(201,154,46,0.22), rgba(201,154,46,0.10))',
-                  border: '1px solid rgba(201,154,46,0.25)',
-                  boxShadow: '0 2px 8px rgba(201,154,46,0.10)',
-                } : {}}
+                  background: 'linear-gradient(110deg, rgba(201,154,46,.22), rgba(201,154,46,.08))',
+                  border: '1px solid rgba(226,184,90,.19)',
+                  boxShadow: 'inset 0 1px rgba(255,255,255,.045), 0 10px 28px rgba(0,0,0,.11)',
+                } : { border: '1px solid transparent' }}
               >
                 {({ isActive }) => (
                   <>
-                    {/* Indicator bar */}
                     {isActive && (
-                      <span
-                        style={{
-                          position: 'absolute',
-                          left: 0,
-                          top: '6px',
-                          bottom: '6px',
-                          width: '3px',
-                          background: '#C99A2E',
-                          borderRadius: '0 3px 3px 0',
-                        }}
-                      />
+                      <span className="absolute -left-[1px] top-2.5 h-7 w-[3px] rounded-r-full bg-kicks-gold-light shadow-[0_0_12px_rgba(226,184,90,.65)]" />
                     )}
-                    <span
-                      style={{
-                        fontSize: '16px',
-                        filter: isActive ? 'none' : 'grayscale(0.3)',
-                        minWidth: '20px',
-                        textAlign: 'center',
-                      }}
-                    >
-                      {item.icon}
+                    <span className={`icon-live flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                      isActive ? 'bg-kicks-gold/15 text-kicks-gold-light' : 'bg-white/[.04] text-white/40 group-hover:text-white/80'
+                    }`}>
+                      <Icon name={item.icon} size={17} />
                     </span>
                     <span>{item.label}</span>
                   </>
@@ -126,13 +116,7 @@ export default function Sidebar({ open, onClose }) {
           })}
         </nav>
 
-        {/* ── Footer / usuário ── */}
-        <div
-          style={{
-            borderTop: '1px solid rgba(255,255,255,0.07)',
-            padding: '16px 16px',
-          }}
-        >
+        <div className="relative border-t border-white/[.07] p-4">
           <UserFooter />
         </div>
       </aside>
@@ -143,49 +127,26 @@ export default function Sidebar({ open, onClose }) {
 function UserFooter() {
   const { signOut, profile } = useAuth()
   const name = profile?.full_name ?? 'Usuário'
-  const initials = name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+  const initials = name.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase()
 
   return (
-    <div className="flex items-center gap-3">
-      {/* Avatar */}
-      <div
-        style={{
-          width: '36px',
-          height: '36px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, #C99A2E, #a87d22)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '13px',
-          fontWeight: 700,
-          color: 'white',
-          flexShrink: 0,
-        }}
-      >
+    <div className="flex items-center gap-3 rounded-xl border border-white/[.06] bg-white/[.035] p-2.5">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-kicks-gold-light to-kicks-gold text-xs font-extrabold text-kicks-navy shadow-lg shadow-black/20">
         {initials}
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-white text-sm font-medium truncate leading-tight">{name}</p>
-        <p className="text-white/40 text-xs">Online</p>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold leading-tight text-white">{name}</p>
+        <p className="mt-1 flex items-center gap-1.5 text-[10px] text-white/38">
+          <span className="live-dot h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.7)]" />
+          Sessão segura
+        </p>
       </div>
       <button
         onClick={signOut}
         title="Sair"
-        style={{
-          color: 'rgba(255,255,255,0.35)',
-          fontSize: '18px',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          padding: '4px',
-          lineHeight: 1,
-          transition: 'color 0.15s',
-        }}
-        onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}
+        className="flex h-8 w-8 items-center justify-center rounded-lg text-white/30 transition-colors hover:bg-white/[.06] hover:text-white"
       >
-        ↪
+        <Icon name="logout" size={16} />
       </button>
     </div>
   )

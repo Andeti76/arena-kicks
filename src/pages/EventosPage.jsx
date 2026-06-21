@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { fmt, fmtDate } from '../lib/format'
+import Icon from '../components/ui/Icon'
 
 const SUB_COLORS = {
-  'Quadras de Areia': { bg: 'bg-yellow-50', border: 'border-yellow-400', icon: '🏖️' },
-  'Quadras Society':  { bg: 'bg-blue-50',   border: 'border-blue-400',   icon: '⚽' },
-  'Churrasqueira':    { bg: 'bg-red-50',     border: 'border-red-400',    icon: '🔥' },
+  'Quadras de Areia': { bg: 'bg-yellow-50', border: 'border-yellow-400', icon: 'areas' },
+  'Quadras Society':  { bg: 'bg-blue-50',   border: 'border-blue-400',   icon: 'dashboard' },
+  'Churrasqueira':    { bg: 'bg-red-50',     border: 'border-red-400',    icon: 'store' },
 }
 
 function getMonthRange(year, month) {
@@ -89,12 +90,13 @@ export default function EventosPage() {
   const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
   return (
-    <div>
+    <div className="page-shell">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-kicks-navy">Sub-Áreas & Eventos</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Desempenho por área — Quadras, Churrasqueira</p>
+          <p className="page-eyebrow">Performance operacional</p>
+          <h1 className="page-title">Sub-Áreas & Eventos</h1>
+          <p className="page-subtitle">Desempenho por área — Quadras e Churrasqueira</p>
         </div>
 
         {/* Seletor mês/ano */}
@@ -144,25 +146,27 @@ export default function EventosPage() {
         <div className="text-center py-16 text-red-500">{error}</div>
       ) : data.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-3xl mb-3">🏟️</p>
+          <Icon name="areas" size={32} className="mx-auto mb-3" />
           <p>Nenhuma sub-área cadastrada.</p>
         </div>
       ) : (
         <div className="space-y-4">
           {data.map(sa => {
-            const colors = SUB_COLORS[sa.name] ?? { bg: 'bg-gray-50', border: 'border-gray-300', icon: '📌' }
+            const colors = SUB_COLORS[sa.name] ?? { bg: 'bg-gray-50', border: 'border-gray-300', icon: 'areas' }
             const isProfit = sa.result >= 0
             return (
               <div key={sa.id} className={`rounded-xl border-l-4 ${colors.border} ${colors.bg} shadow-sm`}>
                 {/* Cabeçalho */}
                 <div className="flex items-center justify-between p-5 pb-4">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{colors.icon}</span>
+                    <span className="icon-live flex h-10 w-10 items-center justify-center rounded-xl bg-white/70 text-kicks-navy">
+                      <Icon name={colors.icon} size={19} />
+                    </span>
                     <div>
                       <h3 className="font-semibold text-gray-800">{sa.name}</h3>
                       {sa.days > 0 && (
                         <p className="text-xs text-gray-400 mt-0.5">
-                          ✅ {sa.okCount}/{sa.days} dias conciliados
+                          <span className="inline-flex items-center gap-1"><Icon name="check" size={12} /> {sa.okCount}/{sa.days} dias conciliados</span>
                         </p>
                       )}
                     </div>

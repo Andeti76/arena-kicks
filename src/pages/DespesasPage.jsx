@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { fmt, fmtDate } from '../lib/format'
+import Icon from '../components/ui/Icon'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const today = () => new Date().toISOString().split('T')[0]
@@ -245,25 +246,20 @@ export default function DespesasPage() {
 
   // ─── Render ─────────────────────────────────────────────────────────────
   return (
-    <div>
+    <div className="page-shell">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-kicks-navy">Despesas</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Lançamento de custos por área
-          </p>
+          <p className="page-eyebrow">Controle de custos</p>
+          <h1 className="page-title">Despesas</h1>
+          <p className="page-subtitle">Lançamento de custos por área</p>
         </div>
         <div className="flex gap-2">
           {['form', 'list'].map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                tab === t
-                  ? 'bg-kicks-navy text-white'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:border-kicks-navy'
-              }`}
+              className={tab === t ? 'tab-btn tab-btn-active' : 'tab-btn tab-btn-inactive'}
             >
               {t === 'form' ? 'Lançar' : 'Histórico'}
             </button>
@@ -536,7 +532,7 @@ export default function DespesasPage() {
           )}
           {!loading && expenses.length === 0 && (
             <div className="text-center py-20 text-gray-400">
-              <p className="text-4xl mb-3">💸</p>
+              <Icon name="expense" size={34} className="mx-auto mb-3" />
               <p className="font-medium">Nenhuma despesa encontrada</p>
               <p className="text-sm">Nenhum lançamento para o período e área selecionados.</p>
             </div>
@@ -572,7 +568,7 @@ export default function DespesasPage() {
                       </div>
                       {exp.supplier_name && (
                         <p className="text-xs text-gray-500 mt-1 truncate">
-                          🏪 {exp.supplier_name}
+                          <span className="inline-flex items-center gap-1.5"><Icon name="store" size={13} /> {exp.supplier_name}</span>
                         </p>
                       )}
                       {exp.proof_note && (
@@ -588,13 +584,13 @@ export default function DespesasPage() {
                       onClick={() => handleEditExpense(exp)}
                       className="text-xs text-kicks-navy hover:text-kicks-navy/70 font-medium transition-colors"
                     >
-                      ✏️ Editar
+                      <span className="inline-flex items-center gap-1.5"><Icon name="edit" size={13} /> Editar</span>
                     </button>
                     <button
                       onClick={() => handleDeleteExpense(exp)}
                       className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors"
                     >
-                      🗑️ Excluir
+                      <span className="inline-flex items-center gap-1.5"><Icon name="trash" size={13} /> Excluir</span>
                     </button>
                   </div>
                 </div>
@@ -606,4 +602,3 @@ export default function DespesasPage() {
     </div>
   )
 }
-

@@ -1,85 +1,63 @@
+import Icon from '../ui/Icon'
+
 const CC_META = {
-  BAR: { color: '#F59E0B', icon: '🍺' },
-  ESC: { color: '#10B981', icon: '⚽' },
-  SOC: { color: '#3B82F6', icon: '🏟️' },
-  EST: { color: '#8B5CF6', icon: '🅿️' },
-  ALL: { color: '#C99A2E', icon: '🏆' },
+  BAR: { color: '#D28C20' },
+  ESC: { color: '#07875E' },
+  SOC: { color: '#2D6FA7' },
+  EST: { color: '#7658A5' },
+  ALL: { color: '#C99A2E' },
 }
 
 const STATUS_CONFIG = {
-  ok:          { icon: '✅', label: 'OK hoje',     cls: 'badge-ok' },
-  discrepancy: { icon: '⚠️', label: 'Divergência', cls: 'badge-disc' },
-  pending:     { icon: '🕐', label: 'Pendente',    cls: 'badge-pending' },
+  ok: { label: 'OK hoje', cls: 'badge-ok' },
+  discrepancy: { label: 'Divergência', cls: 'badge-disc' },
+  pending: { label: 'Pendente', cls: 'badge-pending' },
 }
 
 export default function CCCard({ cc, highlight = false }) {
-  const meta     = CC_META[cc.code] || CC_META.ALL
+  const meta = CC_META[cc.code] || CC_META.ALL
   const isProfit = cc.result >= 0
-  const status   = cc.statusToday ? STATUS_CONFIG[cc.statusToday] : null
+  const status = cc.statusToday ? STATUS_CONFIG[cc.statusToday] : null
 
   return (
     <div
-      style={{
-        background: 'white',
-        borderRadius: '20px',
-        borderLeft: `4px solid ${meta.color}`,
-        boxShadow: highlight
-          ? `0 4px 24px rgba(0,0,0,0.10), 0 0 0 1px ${meta.color}22`
-          : '0 1px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)',
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        transition: 'box-shadow 0.2s',
-      }}
+      className={`premium-card-hover group relative overflow-hidden rounded-[20px] border bg-white/95 p-5 ${
+        highlight
+          ? 'border-kicks-gold/25 shadow-[0_18px_48px_rgba(11,34,56,.10)]'
+          : 'border-[#0f2b43]/[.08] shadow-[0_12px_35px_rgba(11,34,56,.055)] hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(11,34,56,.10)]'
+      }`}
     >
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div
-            style={{
-              width: '40px', height: '40px',
-              borderRadius: '12px',
-              background: `${meta.color}18`,
-              border: `1.5px solid ${meta.color}35`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '18px', flexShrink: 0,
-            }}
+      <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: meta.color }} />
+      {highlight && <span className="absolute -right-12 -top-16 h-40 w-40 rounded-full bg-kicks-gold/[.06]" />}
+
+      <div className="relative flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className="icon-live flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+            style={{ background: `${meta.color}14`, color: meta.color }}
           >
-            {meta.icon}
-          </div>
-          <div>
-            <p style={{ fontWeight: 700, fontSize: '14px', color: '#1a2f47', lineHeight: 1.2 }}>
-              {cc.name}
-            </p>
+            <Icon name={cc.code === 'ALL' ? 'dashboard' : 'areas'} size={19} />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-extrabold text-kicks-navy">{cc.name}</p>
             {cc.totalDays > 0 && (
-              <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
-                ✅ {cc.okCount}/{cc.totalDays} dias
-                {cc.discCount > 0 && (
-                  <span style={{ color: '#ef4444', marginLeft: '8px' }}>⚠️ {cc.discCount}</span>
-                )}
+              <p className="mt-1 text-[10px] font-medium text-slate-400">
+                {cc.okCount}/{cc.totalDays} dias conciliados
+                {cc.discCount > 0 && <span className="ml-2 text-red-500">· {cc.discCount} diverg.</span>}
               </p>
             )}
           </div>
         </div>
-        {status && (
-          <span className={`badge ${status.cls}`} style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-            {status.icon} {status.label}
-          </span>
-        )}
+        {status && <span className={`badge ${status.cls} shrink-0 whitespace-nowrap`}>{status.label}</span>}
       </div>
 
-      {/* Valores */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <Row label="Receita"  value={cc.income}  color="#059669" />
-        <Row label="Despesa"  value={cc.expense} color="#dc2626" />
-        <div style={{ height: '1px', background: '#f3f4f6', margin: '2px 0' }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Resultado</span>
-          <span style={{
-            fontSize: '18px', fontWeight: 800, letterSpacing: '-0.5px',
-            color: isProfit ? '#059669' : '#dc2626',
-          }}>
+      <div className="relative mt-5 space-y-2.5">
+        <Row label="Receita" value={cc.income} color="#07875E" />
+        <Row label="Despesa" value={cc.expense} color="#CF3F47" />
+        <div className="my-1 h-px bg-[#0f2b43]/[.07]" />
+        <div className="flex items-end justify-between gap-3 pt-1">
+          <span className="text-xs font-bold text-slate-600">Resultado</span>
+          <span className={`text-lg font-black tracking-[-.04em] ${isProfit ? 'text-emerald-700' : 'text-red-600'}`}>
             {isProfit ? '+' : ''}{fmt(cc.result)}
           </span>
         </div>
@@ -90,15 +68,17 @@ export default function CCCard({ cc, highlight = false }) {
 
 function Row({ label, value, color }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ fontSize: '12px', color: '#9ca3af' }}>{label}</span>
-      <span style={{ fontSize: '13px', fontWeight: 600, color }}>{fmt(value)}</span>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs text-slate-400">{label}</span>
+      <span className="text-[13px] font-bold" style={{ color }}>{fmt(value)}</span>
     </div>
   )
 }
 
 function fmt(value) {
   return new Intl.NumberFormat('pt-BR', {
-    style: 'currency', currency: 'BRL', minimumFractionDigits: 2,
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
   }).format(value ?? 0)
 }

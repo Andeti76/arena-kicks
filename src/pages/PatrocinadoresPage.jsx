@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { fmt, fmtDate } from '../lib/format'
+import Icon from '../components/ui/Icon'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const today = () => new Date().toISOString().split('T')[0]
@@ -228,14 +229,13 @@ export default function PatrocinadoresPage() {
 
   // ─── Render ─────────────────────────────────────────────────────────────
   return (
-    <div>
+    <div className="page-shell">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-kicks-navy">Patrocinadores</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Gestão de patrocínios e receitas não operacionais
-          </p>
+          <p className="page-eyebrow">Relacionamento & receita</p>
+          <h1 className="page-title">Patrocinadores</h1>
+          <p className="page-subtitle">Gestão de patrocínios e receitas não operacionais</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           {[
@@ -246,11 +246,7 @@ export default function PatrocinadoresPage() {
             <button
               key={t.id}
               onClick={() => { setTab(t.id); setError(null) }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                tab === t.id
-                  ? 'bg-kicks-navy text-white'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:border-kicks-navy'
-              }`}
+              className={tab === t.id ? 'tab-btn tab-btn-active' : 'tab-btn tab-btn-inactive'}
             >
               {t.label}
             </button>
@@ -261,7 +257,7 @@ export default function PatrocinadoresPage() {
       {/* Feedback global */}
       {success && (
         <div className="mb-4 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">
-          ✅ {success}
+          <span className="flex items-center gap-2"><Icon name="check" size={16} /> {success}</span>
         </div>
       )}
 
@@ -272,7 +268,7 @@ export default function PatrocinadoresPage() {
           {/* Alerta de inadimplência */}
           {overdueSponsors.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-3">
-              <span className="text-xl">⚠️</span>
+              <span className="text-red-500"><Icon name="alert" size={20} /></span>
               <div>
                 <p className="text-sm font-semibold text-red-700">
                   {overdueSponsors.length} patrocinador{overdueSponsors.length > 1 ? 'es' : ''} sem pagamento em{' '}
@@ -302,7 +298,7 @@ export default function PatrocinadoresPage() {
             <div className="text-center py-10 text-gray-400">Carregando...</div>
           ) : sponsors.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
-              <p className="text-4xl mb-3">🤝</p>
+              <Icon name="sponsors" size={34} className="mx-auto mb-3" />
               <p className="font-medium">Nenhum patrocinador cadastrado</p>
               {isOwner && (
                 <p className="text-sm mt-1">Use o botão "+ Novo" para cadastrar.</p>
@@ -324,7 +320,7 @@ export default function PatrocinadoresPage() {
                       </span>
                       {overdueSponsors.some(o => o.id === sp.id) && (
                         <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
-                          ⚠️ sem pgto este mês
+                          <span className="inline-flex items-center gap-1"><Icon name="alert" size={12} /> sem pgto este mês</span>
                         </span>
                       )}
                       <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
@@ -337,7 +333,7 @@ export default function PatrocinadoresPage() {
                           {fmt(sp.amount)} / {PERIODICITY.find(p => p.value === sp.periodicity)?.label}
                         </span>
                       )}
-                      {sp.contact && <span>📞 {sp.contact}</span>}
+                      {sp.contact && <span className="inline-flex items-center gap-1.5"><Icon name="phone" size={13} /> {sp.contact}</span>}
                     </div>
                     {sp.notes && (
                       <p className="text-xs text-gray-400 mt-1 truncate">{sp.notes}</p>
@@ -349,7 +345,7 @@ export default function PatrocinadoresPage() {
                         onClick={() => handleEdit(sp)}
                         className="text-xs text-gray-400 hover:text-kicks-navy transition-colors text-right"
                       >
-                        ✏️ Editar
+                        <span className="inline-flex items-center gap-1"><Icon name="edit" size={13} /> Editar</span>
                       </button>
                       <button
                         onClick={() => handleArchive(sp)}
@@ -359,13 +355,13 @@ export default function PatrocinadoresPage() {
                             : 'text-gray-400 hover:text-green-600'
                         }`}
                       >
-                        {sp.status === 'ativo' ? '📦 Arquivar' : '♻️ Reativar'}
+                        <span className="inline-flex items-center gap-1"><Icon name={sp.status === 'ativo' ? 'archive' : 'refresh'} size={13} /> {sp.status === 'ativo' ? 'Arquivar' : 'Reativar'}</span>
                       </button>
                       <button
                         onClick={() => handleDeleteSponsor(sp)}
                         className="text-xs text-gray-300 hover:text-red-600 transition-colors text-right"
                       >
-                        🗑️ Excluir
+                        <span className="inline-flex items-center gap-1"><Icon name="trash" size={13} /> Excluir</span>
                       </button>
                     </div>
                   )}
@@ -399,14 +395,14 @@ export default function PatrocinadoresPage() {
                           className="text-gray-400 hover:text-kicks-navy transition-colors"
                           title="Editar pagamento"
                         >
-                          ✏️
+                          <Icon name="edit" size={15} />
                         </button>
                         <button
                           onClick={() => handleDeletePayment(p)}
                           className="text-gray-300 hover:text-red-500 transition-colors"
                           title="Excluir pagamento"
                         >
-                          🗑️
+                          <Icon name="trash" size={15} />
                         </button>
                       </div>
                     )}
@@ -628,4 +624,3 @@ export default function PatrocinadoresPage() {
     </div>
   )
 }
-

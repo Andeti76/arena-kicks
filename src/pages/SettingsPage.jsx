@@ -2,11 +2,18 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { fmtDate } from '../lib/format'
+import Icon from '../components/ui/Icon'
 
 export default function SettingsPage() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-kicks-navy mb-6">Configurações</h1>
+    <div className="page-shell">
+      <div className="page-header">
+        <div>
+          <p className="page-eyebrow">Administração</p>
+          <h1 className="page-title">Configurações</h1>
+          <p className="page-subtitle">Gerencie acessos, perfis e convites da operação.</p>
+        </div>
+      </div>
       <div className="space-y-6">
         <UsersSection />
         <InviteSection />
@@ -137,12 +144,12 @@ function UsersSection() {
                 {isOwner && ur.profiles?.id !== me?.id && ur.role !== 'owner' && (
                   <div className="flex gap-1 shrink-0">
                     <button onClick={() => startEdit(ur)}
-                      className="text-gray-400 hover:text-kicks-navy transition-colors p-1" title="Editar">
-                      ✏️
+                      className="icon-button h-8 w-8" title="Editar">
+                      <Icon name="edit" size={15} />
                     </button>
                     <button onClick={() => deleteUser(ur)}
-                      className="text-gray-400 hover:text-red-500 transition-colors p-1" title="Excluir">
-                      🗑️
+                      className="icon-button h-8 w-8 hover:!border-red-200 hover:!text-red-500" title="Excluir">
+                      <Icon name="trash" size={15} />
                     </button>
                   </div>
                 )}
@@ -358,7 +365,7 @@ function InviteSection() {
       {createdInvite && (
         <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
           <p className="text-sm font-semibold text-green-800">
-            ✅ Convite criado para <span className="font-bold">{createdInvite.email}</span>
+            <span className="flex items-center gap-2"><Icon name="check" size={16} /> Convite criado para <span className="font-bold">{createdInvite.email}</span></span>
           </p>
           <p className="text-xs text-green-700">
             {emailSent
@@ -373,15 +380,16 @@ function InviteSection() {
           <div className="flex gap-2">
             <button
               onClick={() => copyLink(createdInvite.token, 'new')}
-              className="flex-1 text-sm font-medium bg-kicks-navy text-white rounded-lg py-2 hover:bg-kicks-navy/90 transition-colors"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-kicks-navy py-2 text-sm font-medium text-white transition-colors hover:bg-kicks-navy/90"
             >
-              {copied === 'new' ? '✅ Copiado!' : '📋 Copiar link'}
+              <Icon name={copied === 'new' ? 'check' : 'copy'} size={15} />
+              {copied === 'new' ? 'Copiado!' : 'Copiar link'}
             </button>
             <button
               onClick={() => openEmail(createdInvite)}
-              className="flex-1 text-sm font-medium border border-kicks-navy text-kicks-navy rounded-lg py-2 hover:bg-gray-50 transition-colors"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-kicks-navy py-2 text-sm font-medium text-kicks-navy transition-colors hover:bg-gray-50"
             >
-              ✉️ Abrir e-mail
+              <Icon name="mail" size={15} /> Abrir e-mail
             </button>
           </div>
         </div>
@@ -413,15 +421,16 @@ function InviteSection() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => copyLink(inv.token, inv.id)}
-                    className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg px-3 py-1.5 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-gray-200 px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-300"
                   >
-                    {copied === inv.id ? '✅ Copiado!' : '📋 Copiar link'}
+                    <Icon name={copied === inv.id ? 'check' : 'copy'} size={14} />
+                    {copied === inv.id ? 'Copiado!' : 'Copiar link'}
                   </button>
                   <button
                     onClick={() => openEmail(inv)}
-                    className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg px-3 py-1.5 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-gray-200 px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-300"
                   >
-                    ✉️ Abrir e-mail
+                    <Icon name="mail" size={14} /> Abrir e-mail
                   </button>
                 </div>
               </div>
@@ -435,10 +444,9 @@ function InviteSection() {
 
 function Section({ title, children }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-6">
-      <h2 className="font-semibold text-gray-800 mb-4">{title}</h2>
+    <div className="panel">
+      <h2 className="mb-5 text-base font-extrabold text-kicks-navy">{title}</h2>
       {children}
     </div>
   )
 }
-
