@@ -50,6 +50,7 @@ const paths = {
     </>
   ),
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  chevronDown: <path d="m6 9 6 6 6-6" />,
   logout: (
     <>
       <path d="M10 17l5-5-5-5" />
