@@ -15,14 +15,15 @@ export default function AcceptInvitePage() {
 
   useEffect(() => {
     if (!token) { setError('Link inválido.'); setLoading(false); return }
-    supabase.from('invites')
-      .select('id, email, role, cost_center_id, expires_at, accepted_at, cost_centers(name)')
-      .eq('token', token).single()
+    supabase.rpc('get_invite_by_token', { p_token: token })
       .then(({ data, error }) => {
-        if (error || !data) { setError('Convite não encontrado.'); }
-        else if (data.accepted_at) { setError('Este convite já foi utilizado.') }
+        if (error || !data || data.error) { setError('Convite não encontrado.') }
+        else if (data.accepted_at)        { setError('Este convite já foi utilizado.') }
         else if (new Date(data.expires_at) < new Date()) { setError('Este convite expirou.') }
-        else setInvite(data)
+        else setInvite({
+          ...data,
+          cost_centers: data.cost_center_name ? { name: data.cost_center_name } : null,
+        })
         setLoading(false)
       })
   }, [token])
@@ -45,15 +46,13 @@ export default function AcceptInvitePage() {
       const userId = authData.user?.id
       if (!userId) throw new Error('Erro ao criar usuário.')
 
-      // Atribuir role
-      await supabase.from('user_roles').insert({
-        user_id:        userId,
-        role:           invite.role,
-        cost_center_id: invite.cost_center_id || null,
+      // Atribuir role e marcar convite como aceito (RPC atômica — bypassa RLS)
+      const { data: acceptData, error: acceptErr } = await supabase.rpc('accept_invite', {
+        p_token:   token,
+        p_user_id: userId,
       })
-
-      // Marcar convite como aceito
-      await supabase.from('invites').update({ accepted_at: new Date().toISOString() }).eq('id', invite.id)
+      if (acceptErr) throw acceptErr
+      if (acceptData?.error) throw new Error(acceptData.error)
 
       navigate('/', { replace: true })
     } catch (err) {

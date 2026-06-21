@@ -351,6 +351,104 @@ begin
 end;
 $$;
 
+-- Insere despesa + rateio atomicamente (sem checar RLS — SECURITY DEFINER)
+-- Chamada: supabase.rpc('insert_expense_with_allocations', { p_expense, p_allocations })
+drop function if exists insert_expense_with_allocations(jsonb, jsonb);
+create or replace function insert_expense_with_allocations(
+  p_expense     jsonb,
+  p_allocations jsonb
+) returns void language plpgsql security definer as $$
+declare
+  v_expense_id uuid;
+  v_alloc      jsonb;
+begin
+  insert into expenses (
+    expense_date, cost_center_id, sub_area_id, category_id,
+    description, amount, payment_method, is_general,
+    supplier_name, proof_note, created_by
+  ) values (
+    (p_expense->>'expense_date')::date,
+    (p_expense->>'cost_center_id')::uuid,
+    (p_expense->>'sub_area_id')::uuid,
+    (p_expense->>'category_id')::uuid,
+     p_expense->>'description',
+    (p_expense->>'amount')::numeric,
+     p_expense->>'payment_method',
+    (p_expense->>'is_general')::boolean,
+     p_expense->>'supplier_name',
+     p_expense->>'proof_note',
+    (p_expense->>'created_by')::uuid
+  ) returning id into v_expense_id;
+
+  for v_alloc in select * from jsonb_array_elements(p_allocations) loop
+    insert into expense_allocations (expense_id, cost_center_id, percentage, amount)
+    values (
+      v_expense_id,
+      (v_alloc->>'cost_center_id')::uuid,
+      (v_alloc->>'percentage')::numeric,
+      (v_alloc->>'amount')::numeric
+    );
+  end loop;
+end;
+$$;
+
+-- Retorna dados do convite pelo token sem exigir autenticação
+-- Chamada: supabase.rpc('get_invite_by_token', { p_token })
+create or replace function get_invite_by_token(p_token uuid)
+returns jsonb language plpgsql security definer as $$
+declare
+  v_invite record;
+begin
+  select i.id, i.email, i.role, i.cost_center_id, i.expires_at, i.accepted_at,
+         cc.name as cost_center_name
+  into   v_invite
+  from   invites i
+  left join cost_centers cc on cc.id = i.cost_center_id
+  where  i.token = p_token;
+
+  if not found then
+    return jsonb_build_object('error', 'not_found');
+  end if;
+
+  return jsonb_build_object(
+    'id',               v_invite.id,
+    'email',            v_invite.email,
+    'role',             v_invite.role,
+    'cost_center_id',   v_invite.cost_center_id,
+    'expires_at',       v_invite.expires_at,
+    'accepted_at',      v_invite.accepted_at,
+    'cost_center_name', v_invite.cost_center_name
+  );
+end;
+$$;
+
+-- Aceita convite: insere role e marca convite como aceito atomicamente
+-- Chamada: supabase.rpc('accept_invite', { p_token, p_user_id })
+create or replace function accept_invite(p_token uuid, p_user_id uuid)
+returns jsonb language plpgsql security definer as $$
+declare
+  v_invite record;
+begin
+  select * into v_invite
+  from   invites
+  where  token = p_token
+    and  accepted_at is null
+    and  expires_at > now();
+
+  if not found then
+    return jsonb_build_object('error', 'Convite inválido ou expirado.');
+  end if;
+
+  insert into user_roles (user_id, role, cost_center_id)
+  values (p_user_id, v_invite.role, v_invite.cost_center_id)
+  on conflict do nothing;
+
+  update invites set accepted_at = now() where id = v_invite.id;
+
+  return jsonb_build_object('ok', true);
+end;
+$$;
+
 -- ============================================================
 -- RLS — ROW LEVEL SECURITY
 -- ============================================================
@@ -404,7 +502,9 @@ create policy "sub_write" on sub_areas for all    using (my_role() in ('owner','
 -- daily_reports
 create policy "dr_read_all"  on daily_reports for select using (my_role() in ('owner','partner'));
 create policy "dr_read_area" on daily_reports for select using (my_role() = 'area_manager' and cost_center_id = my_cc());
-create policy "dr_write"     on daily_reports for all    using (my_role() in ('owner','partner','area_manager'));
+create policy "dr_write"     on daily_reports for all
+  using      (my_role() in ('owner','partner') or (my_role() = 'area_manager' and cost_center_id = my_cc()))
+  with check (my_role() in ('owner','partner') or (my_role() = 'area_manager' and cost_center_id = my_cc()));
 
 -- expense_categories
 create policy "ecat_read"  on expense_categories for select using (true);
@@ -413,7 +513,9 @@ create policy "ecat_write" on expense_categories for all    using (my_role() in 
 -- expenses
 create policy "exp_read_all"  on expenses for select using (my_role() in ('owner','partner'));
 create policy "exp_read_area" on expenses for select using (my_role() = 'area_manager' and cost_center_id = my_cc());
-create policy "exp_write"     on expenses for all    using (my_role() in ('owner','partner','area_manager'));
+create policy "exp_write"     on expenses for all
+  using      (my_role() in ('owner','partner') or (my_role() = 'area_manager' and cost_center_id = my_cc()))
+  with check (my_role() in ('owner','partner') or (my_role() = 'area_manager' and cost_center_id = my_cc()));
 
 -- expense_allocations
 create policy "alloc_read"  on expense_allocations for select using (my_role() in ('owner','partner'));
