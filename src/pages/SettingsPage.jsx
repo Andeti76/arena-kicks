@@ -41,14 +41,16 @@ function UsersSection() {
 
   async function load() {
     setLoading(true)
-    const { data } = await supabase
+    setError(null)
+    const { data, error: loadErr } = await supabase
       .from('user_roles')
       .select(`
         id, role, cost_center_id,
-        profiles(id, full_name),
+        profiles!user_roles_user_id_fkey(id, full_name),
         cost_centers(name)
       `)
       .order('role')
+    if (loadErr) setError(loadErr.message)
     setUsers(data || [])
     setLoading(false)
   }
