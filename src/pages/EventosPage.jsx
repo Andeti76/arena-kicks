@@ -4,9 +4,9 @@ import { fmt, fmtDate } from '../lib/format'
 import Icon from '../components/ui/Icon'
 
 const SUB_COLORS = {
-  'Quadras de Areia': { bg: 'bg-yellow-50', border: 'border-yellow-400', icon: 'areas' },
-  'Quadras Society':  { bg: 'bg-blue-50',   border: 'border-blue-400',   icon: 'dashboard' },
-  'Churrasqueira':    { bg: 'bg-red-50',     border: 'border-red-400',    icon: 'store' },
+  'Quadras de Areia': { bg: 'bg-yellow-50', border: 'border-yellow-400', icon: 'sandCourt' },
+  'Quadras Society':  { bg: 'bg-blue-50',   border: 'border-blue-400',   icon: 'soccerField' },
+  'Churrasqueira':    { bg: 'bg-red-50',     border: 'border-red-400',    icon: 'grill' },
 }
 
 function getMonthRange(year, month) {

@@ -10,6 +10,7 @@ import StudentForm    from '../components/escolinha/StudentForm'
 import EnrollmentForm from '../components/escolinha/EnrollmentForm'
 import { supabase }   from '../lib/supabase'
 import { fmt, fmtDate } from '../lib/format'
+import Icon from '../components/ui/Icon'
 
 export default function EscolinhaPage() {
   return (
@@ -68,7 +69,7 @@ function AlunosTab() {
 
       {!loading && students.length === 0 && (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-4xl mb-3">⚽</p>
+          <Icon name="soccerBall" size={36} className="mx-auto mb-3" />
           <p className="font-medium">Nenhum aluno cadastrado</p>
         </div>
       )}
@@ -129,9 +130,9 @@ function StudentCard({ student, onEdit, onDelete, onEnroll }) {
         </div>
       </div>
       <div className="flex gap-1 flex-shrink-0">
-        <button onClick={onEnroll} title="Matricular" className="p-1.5 text-gray-400 hover:text-green-600 rounded transition-colors">➕</button>
-        <button onClick={onEdit}   title="Editar"     className="p-1.5 text-gray-400 hover:text-kicks-navy rounded transition-colors">✏️</button>
-        <button onClick={onDelete} title="Excluir"    className="p-1.5 text-gray-400 hover:text-red-500 rounded transition-colors">🗑️</button>
+        <button onClick={onEnroll} title="Matricular" className="p-1.5 text-gray-400 hover:text-green-600 rounded transition-colors"><Icon name="check" size={16} /></button>
+        <button onClick={onEdit} title="Editar" className="p-1.5 text-gray-400 hover:text-kicks-navy rounded transition-colors"><Icon name="edit" size={16} /></button>
+        <button onClick={onDelete} title="Excluir" className="p-1.5 text-gray-400 hover:text-red-500 rounded transition-colors"><Icon name="trash" size={16} /></button>
       </div>
     </div>
   )
@@ -191,7 +192,7 @@ function MensalidadesTab() {
         <input type="month" value={month} onChange={e => setMonth(e.target.value)} className="input w-40" />
         <button onClick={generateFees} disabled={generating}
           className="btn-primary whitespace-nowrap">
-          {generating ? 'Gerando...' : '⚡ Gerar mensalidades'}
+          {generating ? 'Gerando...' : 'Gerar mensalidades'}
         </button>
       </div>
 
@@ -202,7 +203,7 @@ function MensalidadesTab() {
             ? 'bg-green-50 border border-green-200 text-green-700'
             : 'bg-red-50 border border-red-200 text-red-600'
         }`}>
-          {toast.type === 'success' ? '✅' : '⚠️'} {toast.msg}
+          <span className="inline-flex items-center gap-2"><Icon name={toast.type === 'success' ? 'check' : 'alert'} size={15} /> {toast.msg}</span>
         </div>
       )}
 
@@ -258,7 +259,7 @@ function MensalidadesTab() {
 
       {!loading && fees.length === 0 && (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-4xl mb-3">📋</p>
+          <Icon name="clipboard" size={36} className="mx-auto mb-3" />
           <p className="font-medium">Nenhuma mensalidade para este mês</p>
           <p className="text-sm">Clique em "Gerar mensalidades" para criar as cobranças do mês.</p>
         </div>
@@ -317,4 +318,3 @@ function Modal({ title, children, onClose }) {
     </div>
   )
 }
-

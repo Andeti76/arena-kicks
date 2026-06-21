@@ -89,7 +89,7 @@ export default function Sidebar({ open, onClose }) {
                   `group relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition-all duration-200 ${
                     isActive
                       ? 'text-white'
-                      : 'text-white/52 hover:bg-white/[.055] hover:text-white/90'
+                      : 'text-white/80 hover:bg-white/[.065] hover:text-white'
                   }`
                 }
                 style={({ isActive }) => isActive ? {
@@ -104,7 +104,7 @@ export default function Sidebar({ open, onClose }) {
                       <span className="absolute -left-[1px] top-2.5 h-7 w-[3px] rounded-r-full bg-kicks-gold-light shadow-[0_0_12px_rgba(226,184,90,.65)]" />
                     )}
                     <span className={`icon-live flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                      isActive ? 'bg-kicks-gold/15 text-kicks-gold-light' : 'bg-white/[.04] text-white/40 group-hover:text-white/80'
+                      isActive ? 'bg-kicks-gold/15 text-kicks-gold-light' : 'bg-white/[.07] text-white/70 group-hover:bg-white/[.10] group-hover:text-white'
                     }`}>
                       <Icon name={item.icon} size={17} />
                     </span>

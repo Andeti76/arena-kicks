@@ -383,7 +383,10 @@ export default function DespesasPage() {
                 ))}
               </div>
               <div className={`text-sm font-semibold ${allocValid ? 'text-green-700' : 'text-red-600'}`}>
-                Total: {totalAlloc.toFixed(1)}% {allocValid ? '✓' : '⚠️'}
+                <span className="inline-flex items-center gap-1.5">
+                  Total: {totalAlloc.toFixed(1)}%
+                  <Icon name={allocValid ? 'check' : 'alert'} size={13} />
+                </span>
               </div>
             </div>
           )}
@@ -461,7 +464,7 @@ export default function DespesasPage() {
           )}
           {success && (
             <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">
-              ✅ Despesa lançada com sucesso!
+              <span className="inline-flex items-center gap-2"><Icon name="check" size={15} /> Despesa lançada com sucesso!</span>
             </div>
           )}
 

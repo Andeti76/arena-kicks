@@ -1,11 +1,11 @@
 import Icon from '../ui/Icon'
 
 const CC_META = {
-  BAR: { color: '#D28C20' },
-  ESC: { color: '#07875E' },
-  SOC: { color: '#2D6FA7' },
-  EST: { color: '#7658A5' },
-  ALL: { color: '#C99A2E' },
+  BAR: { color: '#D28C20', icon: 'bar' },
+  ESC: { color: '#07875E', icon: 'soccerBall' },
+  SOC: { color: '#2D6FA7', icon: 'soccerField' },
+  EST: { color: '#7658A5', icon: 'parking' },
+  ALL: { color: '#C99A2E', icon: 'dashboard' },
 }
 
 const STATUS_CONFIG = {
@@ -36,7 +36,7 @@ export default function CCCard({ cc, highlight = false }) {
             className="icon-live flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
             style={{ background: `${meta.color}14`, color: meta.color }}
           >
-            <Icon name={cc.code === 'ALL' ? 'dashboard' : 'areas'} size={19} />
+            <Icon name={meta.icon} size={19} />
           </span>
           <div className="min-w-0">
             <p className="truncate text-sm font-extrabold text-kicks-navy">{cc.name}</p>

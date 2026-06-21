@@ -298,7 +298,7 @@ export default function ConciliacaoPage() {
                   borderRadius: '10px', padding: '10px 14px',
                   fontSize: '13px', color: '#92400e',
                 }}>
-                  ⚠️ Registro existente — salvar irá <strong>atualizar</strong>.
+                  <span className="inline-flex items-center gap-2"><Icon name="alert" size={15} /> Registro existente — salvar irá <strong>atualizar</strong>.</span>
                 </div>
               )}
             </div>
@@ -372,18 +372,18 @@ export default function ConciliacaoPage() {
             {/* Feedback */}
             {error && (
               <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '12px 16px', color: '#dc2626', fontSize: '13px' }}>
-                ⚠️ {error}
+                <span className="inline-flex items-center gap-2"><Icon name="alert" size={15} /> {error}</span>
               </div>
             )}
             {success && (
               <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '12px 16px', color: '#059669', fontSize: '13px', fontWeight: 600 }}>
-                ✅ Conciliação salva com sucesso!
+                <span className="inline-flex items-center gap-2"><Icon name="check" size={15} /> Conciliação salva com sucesso!</span>
               </div>
             )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button type="submit" disabled={saving} className="btn-primary" style={{ minWidth: '180px', padding: '12px 24px', fontSize: '14px' }}>
-                {saving ? 'Salvando...' : existingId ? '↻ Atualizar Conciliação' : '✓ Salvar Conciliação'}
+                {saving ? 'Salvando...' : existingId ? 'Atualizar Conciliação' : 'Salvar Conciliação'}
               </button>
             </div>
           </form>
@@ -412,7 +412,7 @@ export default function ConciliacaoPage() {
           )}
           {!loading && history.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 0', color: '#9ca3af' }}>
-              <p style={{ fontSize: '40px', marginBottom: '12px' }}>📋</p>
+              <Icon name="clipboard" size={36} className="mx-auto mb-3" />
               <p style={{ fontWeight: 600, color: '#6b7280' }}>Nenhum registro</p>
               <p style={{ fontSize: '13px', marginTop: '4px' }}>Lance a primeira conciliação pela aba "Lançar".</p>
             </div>
@@ -456,7 +456,7 @@ export default function ConciliacaoPage() {
                         onClick={() => handleDeleteReport(r.id)}
                         style={{ fontSize: '12px', color: '#ef4444', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}
                       >
-                        🗑️
+                        <Icon name="trash" size={15} />
                       </button>
                     </div>
                   </div>
