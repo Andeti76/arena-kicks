@@ -494,7 +494,7 @@ $$;
 
 -- Retorna dados do convite pelo token (acessível sem autenticação — anon)
 -- Chamada: supabase.rpc('get_invite_by_token', { p_token })
-create or replace function get_invite_by_token(p_token uuid)
+create or replace function get_invite_by_token(p_token text)
 returns jsonb language plpgsql security definer
 set search_path = ''
 as $$
@@ -527,7 +527,7 @@ $$;
 -- Aceita convite: usa auth.uid() para evitar falsificação de identidade
 -- Chamada: supabase.rpc('accept_invite', { p_token })
 drop function if exists accept_invite(uuid, uuid);
-create or replace function accept_invite(p_token uuid)
+create or replace function accept_invite(p_token text)
 returns jsonb language plpgsql security definer
 set search_path = ''
 as $$
@@ -723,8 +723,8 @@ on conflict do nothing;
 
 -- Revogar acesso público padrão
 revoke execute on function insert_expense_with_allocations(jsonb, jsonb) from public;
-revoke execute on function get_invite_by_token(uuid)                      from public;
-revoke execute on function accept_invite(uuid)                            from public;
+revoke execute on function get_invite_by_token(text)                      from public;
+revoke execute on function accept_invite(text)                            from public;
 revoke execute on function generate_monthly_fees(date)                    from public;
 revoke execute on function update_overdue_fees()                          from public;
 revoke execute on function my_role()                                      from public;
@@ -732,8 +732,8 @@ revoke execute on function my_cc()                                        from p
 
 -- Conceder apenas ao role correto
 grant execute on function insert_expense_with_allocations(jsonb, jsonb) to authenticated;
-grant execute on function get_invite_by_token(uuid)                      to anon, authenticated;
-grant execute on function accept_invite(uuid)                            to authenticated;
+grant execute on function get_invite_by_token(text)                      to anon, authenticated;
+grant execute on function accept_invite(text)                            to authenticated;
 grant execute on function generate_monthly_fees(date)                    to authenticated;
 grant execute on function update_overdue_fees()                          to authenticated;
 grant execute on function my_role()                                      to authenticated;
