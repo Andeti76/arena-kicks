@@ -176,11 +176,18 @@ export default function ConciliacaoPage() {
     })
   }, [form.report_date, form.cost_center_id, form.sub_area_id])
 
+  const handleDeleteReport = async (id) => {
+    if (!confirm('Excluir este registro de conciliação?\nEsta ação não pode ser desfeita.')) return
+    const { error } = await supabase.from('daily_reports').delete().eq('id', id)
+    if (error) { setError(error.message); return }
+    loadHistory()
+  }
+
   const loadHistory = useCallback(async () => {
     setLoading(true)
     const { data, error } = await supabase
       .from('daily_reports')
-      .select('id, report_date, status, sys_total, maq_total, cash_counted, notes, cost_centers(name,code), sub_areas(name)')
+      .select('id, report_date, status, sys_total, maq_total, cash_counted, notes, cost_centers(id,name,code), sub_areas(id,name)')
       .order('report_date', { ascending: false }).limit(30)
     setLoading(false)
     if (!error) setHistory(data ?? [])
@@ -429,19 +436,28 @@ export default function ConciliacaoPage() {
                       </div>
                       {r.notes && <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>{r.notes}</p>}
                     </div>
-                    <button
-                      onClick={() => {
-                        setTab('form')
-                        setForm(prev => ({
-                          ...prev,
-                          report_date: r.report_date,
-                          cost_center_id: r.cost_centers?.id ?? prev.cost_center_id,
-                        }))
-                      }}
-                      style={{ fontSize: '12px', color: '#0B2238', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}
-                    >
-                      Editar →
-                    </button>
+                    <div style={{ display: 'flex', gap: '12px', flexShrink: 0 }}>
+                      <button
+                        onClick={() => {
+                          setTab('form')
+                          setForm(prev => ({
+                            ...prev,
+                            report_date:    r.report_date,
+                            cost_center_id: r.cost_centers?.id ?? prev.cost_center_id,
+                            sub_area_id:    r.sub_areas?.id ?? '',
+                          }))
+                        }}
+                        style={{ fontSize: '12px', color: '#0B2238', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}
+                      >
+                        Editar →
+                      </button>
+                      <button
+                        onClick={() => handleDeleteReport(r.id)}
+                        style={{ fontSize: '12px', color: '#ef4444', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
                 )
               })}

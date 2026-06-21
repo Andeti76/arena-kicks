@@ -50,6 +50,7 @@ export default function DespesasPage() {
   // Filtros do histórico
   const [filterMonth,  setFilterMonth]  = useState(defaultMonth)
   const [filterCC,     setFilterCC]     = useState('')
+  const [editingExpenseId, setEditingExpenseId] = useState(null)
 
   // ── Busca dados de referência ──
   useEffect(() => {
@@ -95,6 +96,7 @@ export default function DespesasPage() {
       .from('expenses')
       .select(`
         id, expense_date, description, amount, payment_method, is_general, supplier_name, proof_note,
+        cost_center_id, sub_area_id, category_id,
         cost_centers ( name ),
         expense_categories ( name )
       `)
@@ -158,21 +160,86 @@ export default function DespesasPage() {
           }))
       : []
 
-    // RPC atômica — despesa + rateio em uma única transação
-    const { error: errRpc } = await supabase.rpc('insert_expense_with_allocations', {
-      p_expense:     expensePayload,
-      p_allocations: allocPayload,
-    })
+    if (editingExpenseId) {
+      const { error: updateErr } = await supabase
+        .from('expenses')
+        .update({
+          expense_date:   expensePayload.expense_date,
+          cost_center_id: expensePayload.cost_center_id,
+          sub_area_id:    expensePayload.sub_area_id,
+          category_id:    expensePayload.category_id,
+          description:    expensePayload.description,
+          amount:         expensePayload.amount,
+          payment_method: expensePayload.payment_method,
+          is_general:     expensePayload.is_general,
+          supplier_name:  expensePayload.supplier_name,
+          proof_note:     expensePayload.proof_note,
+        })
+        .eq('id', editingExpenseId)
 
-    if (errRpc) { setSaving(false); setError(errRpc.message); return }
+      if (updateErr) { setSaving(false); setError(updateErr.message); return }
+
+      await supabase.from('expense_allocations').delete().eq('expense_id', editingExpenseId)
+
+      if (allocPayload.length > 0) {
+        const { error: allocErr } = await supabase
+          .from('expense_allocations')
+          .insert(allocPayload.map(a => ({ ...a, expense_id: editingExpenseId })))
+        if (allocErr) { setSaving(false); setError(allocErr.message); return }
+      }
+
+      setEditingExpenseId(null)
+    } else {
+      // RPC atômica — despesa + rateio em uma única transação
+      const { error: errRpc } = await supabase.rpc('insert_expense_with_allocations', {
+        p_expense:     expensePayload,
+        p_allocations: allocPayload,
+      })
+      if (errRpc) { setSaving(false); setError(errRpc.message); return }
+    }
 
     setSaving(false)
     setSuccess(true)
     setForm({ ...EMPTY_FORM, expense_date: form.expense_date })
     setAlloc({})
     setTimeout(() => setSuccess(false), 3000)
-    // Vai direto para o histórico e recarrega
     setTab('list')
+    loadExpenses()
+  }
+
+  const handleEditExpense = async (exp) => {
+    setForm({
+      expense_date:   exp.expense_date,
+      cost_center_id: exp.cost_center_id ?? '',
+      sub_area_id:    exp.sub_area_id ?? '',
+      category_id:    exp.category_id ?? '',
+      description:    exp.description ?? '',
+      amount:         String(exp.amount ?? ''),
+      payment_method: exp.payment_method ?? 'pix',
+      is_general:     exp.is_general ?? false,
+      supplier_name:  exp.supplier_name ?? '',
+      proof_note:     exp.proof_note ?? '',
+    })
+    setEditingExpenseId(exp.id)
+    setError(null)
+    setSuccess(false)
+    setTab('form')
+
+    if (exp.is_general) {
+      const { data: allocs } = await supabase
+        .from('expense_allocations')
+        .select('cost_center_id, percentage')
+        .eq('expense_id', exp.id)
+      const map = {}
+      ;(allocs ?? []).forEach(a => { map[a.cost_center_id] = String(a.percentage) })
+      setAlloc(map)
+    }
+  }
+
+  const handleDeleteExpense = async (exp) => {
+    if (!confirm(`Excluir a despesa "${exp.description}"?\nEsta ação não pode ser desfeita.`)) return
+    const { error: err } = await supabase.from('expenses').delete().eq('id', exp.id)
+    if (err) { setError(err.message); return }
     loadExpenses()
   }
 
@@ -402,14 +469,23 @@ export default function DespesasPage() {
             </div>
           )}
 
-          <div className="flex justify-end">
+          <div className="flex gap-3 justify-end">
+            {editingExpenseId && (
+              <button
+                type="button"
+                onClick={() => { setEditingExpenseId(null); setForm(EMPTY_FORM); setAlloc({}) }}
+                className="px-5 py-2.5 rounded-lg border border-gray-200 text-gray-600 text-sm font-medium hover:border-gray-400 transition-colors"
+              >
+                Cancelar
+              </button>
+            )}
             <button
               type="submit"
               disabled={saving}
               className="px-6 py-2.5 rounded-lg bg-kicks-navy text-white font-semibold text-sm
                          hover:bg-kicks-navy/90 disabled:opacity-50 transition-colors"
             >
-              {saving ? 'Salvando...' : 'Lançar Despesa'}
+              {saving ? 'Salvando...' : editingExpenseId ? 'Atualizar Despesa' : 'Lançar Despesa'}
             </button>
           </div>
         </form>
@@ -506,6 +582,20 @@ export default function DespesasPage() {
                     <span className="font-bold text-red-600 text-sm shrink-0">
                       -{fmt(exp.amount)}
                     </span>
+                  </div>
+                  <div className="flex gap-4 mt-2 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => handleEditExpense(exp)}
+                      className="text-xs text-kicks-navy hover:text-kicks-navy/70 font-medium transition-colors"
+                    >
+                      ✏️ Editar
+                    </button>
+                    <button
+                      onClick={() => handleDeleteExpense(exp)}
+                      className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors"
+                    >
+                      🗑️ Excluir
+                    </button>
                   </div>
                 </div>
               ))}

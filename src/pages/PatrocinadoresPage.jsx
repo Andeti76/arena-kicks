@@ -164,6 +164,23 @@ export default function PatrocinadoresPage() {
     setTab('cadastro')
   }
 
+  const handleDeleteSponsor = async (sp) => {
+    if (!confirm(`Excluir permanentemente "${sp.name}"?\nTodos os pagamentos deste patrocinador também serão excluídos.`)) return
+    const { error: err } = await supabase.from('sponsors').delete().eq('id', sp.id)
+    if (err) { setError(err.message); return }
+    await loadSponsors()
+    await loadPayments()
+    flash(`"${sp.name}" excluído.`)
+  }
+
+  const handleDeletePayment = async (p) => {
+    if (!confirm(`Excluir pagamento de ${p.sponsors?.name ?? 'patrocinador'}?`)) return
+    const { error: err } = await supabase.from('sponsor_payments').delete().eq('id', p.id)
+    if (err) { setError(err.message); return }
+    await loadPayments()
+    flash('Pagamento excluído.')
+  }
+
   // ── Totais ──
   const ativos = sponsors.filter(s => s.status === 'ativo')
   const totalMensal = ativos.reduce((sum, s) => {
@@ -320,6 +337,12 @@ export default function PatrocinadoresPage() {
                       >
                         {sp.status === 'ativo' ? '📦 Arquivar' : '♻️ Reativar'}
                       </button>
+                      <button
+                        onClick={() => handleDeleteSponsor(sp)}
+                        className="text-xs text-gray-300 hover:text-red-600 transition-colors text-right"
+                      >
+                        🗑️ Excluir
+                      </button>
                     </div>
                   )}
                 </div>
@@ -345,6 +368,15 @@ export default function PatrocinadoresPage() {
                       <p className="text-xs text-gray-400">{fmtDate(p.payment_date)}{p.notes ? ` · ${p.notes}` : ''}</p>
                     </div>
                     <span className="font-bold text-green-600 text-sm shrink-0">+{fmt(p.amount)}</span>
+                    {isOwner && (
+                      <button
+                        onClick={() => handleDeletePayment(p)}
+                        className="text-gray-300 hover:text-red-500 transition-colors shrink-0"
+                        title="Excluir pagamento"
+                      >
+                        🗑️
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
