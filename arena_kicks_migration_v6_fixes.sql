@@ -113,7 +113,7 @@ begin
     from jsonb_array_elements(p_allocations) a;
 
     if abs(v_alloc_sum - 100) > 0.01 then
-      raise exception 'Rateio deve totalizar 100%% (atual: %%)', v_alloc_sum;
+      raise exception 'Rateio deve totalizar 100%% (atual: %)', v_alloc_sum;
     end if;
   end if;
 
