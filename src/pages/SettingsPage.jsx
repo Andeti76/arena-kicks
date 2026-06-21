@@ -17,11 +17,20 @@ export default function SettingsPage() {
 
 /* ─────────────────────────────── USUÁRIOS ── */
 function UsersSection() {
-  const [users, setUsers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const { user: me } = useAuth()
+  const [users, setUsers]             = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [costCenters, setCostCenters] = useState([])
+  const [editingId, setEditingId]     = useState(null)
+  const [editForm, setEditForm]       = useState({ full_name: '', role: 'partner', cost_center_id: '' })
+  const [saving, setSaving]           = useState(false)
+  const [error, setError]             = useState(null)
+  const { user: me, isOwner }         = useAuth()
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    supabase.from('cost_centers').select('id, name').eq('is_active', true).order('sort_order')
+      .then(({ data }) => setCostCenters(data ?? []))
+  }, [])
 
   async function load() {
     setLoading(true)
@@ -37,9 +46,62 @@ function UsersSection() {
     setLoading(false)
   }
 
-  async function removeUser(ur) {
-    if (!confirm(`Remover acesso de "${ur.profiles?.full_name}"?`)) return
-    await supabase.from('user_roles').delete().eq('id', ur.id)
+  function startEdit(ur) {
+    setEditingId(ur.id)
+    setEditForm({
+      full_name:      ur.profiles?.full_name ?? '',
+      role:           ur.role,
+      cost_center_id: ur.cost_center_id ?? '',
+    })
+    setError(null)
+  }
+
+  async function saveEdit() {
+    const ur = users.find(u => u.id === editingId)
+    if (!ur) return
+    if (!editForm.full_name.trim()) { setError('Nome é obrigatório.'); return }
+    setSaving(true); setError(null)
+
+    const [profileRes, roleRes] = await Promise.all([
+      supabase.from('profiles')
+        .update({ full_name: editForm.full_name.trim() })
+        .eq('id', ur.profiles.id),
+      supabase.from('user_roles')
+        .update({
+          role:           editForm.role,
+          cost_center_id: editForm.role === 'area_manager' ? (editForm.cost_center_id || null) : null,
+        })
+        .eq('id', ur.id),
+    ])
+
+    setSaving(false)
+    if (profileRes.error || roleRes.error) {
+      setError(profileRes.error?.message ?? roleRes.error?.message)
+      return
+    }
+    setEditingId(null)
+    load()
+  }
+
+  async function deleteUser(ur) {
+    if (!confirm(
+      `Excluir permanentemente "${ur.profiles?.full_name}"?\n` +
+      `O usuário perderá acesso imediatamente e será removido do Supabase.`
+    )) return
+
+    setError(null)
+    const { data, error: err } = await supabase.functions.invoke('delete-user', {
+      body: { user_id: ur.profiles?.id },
+    })
+
+    if (err) {
+      let msg = err.message
+      if (err.context) {
+        try { const b = await err.context.json(); msg = b?.error || msg } catch {}
+      }
+      setError(msg); return
+    }
+    if (data?.error) { setError(data.error); return }
     load()
   }
 
@@ -53,27 +115,104 @@ function UsersSection() {
   return (
     <Section title="Usuários com acesso">
       {loading && <p className="text-gray-400 text-sm">Carregando...</p>}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg px-4 py-3 text-sm mb-3">
+          {error}
+        </div>
+      )}
+
       <div className="space-y-2">
         {users.map(ur => (
-          <div key={ur.id} className="flex items-center gap-3 bg-white rounded-lg border border-gray-100 px-4 py-3">
-            <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600 flex-shrink-0">
-              {ur.profiles?.full_name?.charAt(0)?.toUpperCase() || '?'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800">{ur.profiles?.full_name || 'Usuário'}</p>
-              {ur.cost_centers && <p className="text-xs text-gray-400">{ur.cost_centers.name}</p>}
-            </div>
-            <span className={`text-xs font-medium px-2 py-1 rounded-full ${ROLE_COLOR[ur.role]}`}>
-              {ROLE_LABEL[ur.role]}
-            </span>
-            {ur.profiles?.id !== me?.id && ur.role !== 'owner' && (
-              <button onClick={() => removeUser(ur)}
-                className="text-gray-400 hover:text-red-500 transition-colors p-1" title="Remover">
-                🗑️
-              </button>
+          <div key={ur.id} className="bg-white rounded-lg border border-gray-100 overflow-hidden">
+
+            {/* ── Linha normal ── */}
+            {editingId !== ur.id ? (
+              <div className="flex items-center gap-3 px-4 py-3">
+                <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600 flex-shrink-0">
+                  {ur.profiles?.full_name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800">{ur.profiles?.full_name || 'Usuário'}</p>
+                  {ur.cost_centers && <p className="text-xs text-gray-400">{ur.cost_centers.name}</p>}
+                </div>
+                <span className={`text-xs font-medium px-2 py-1 rounded-full ${ROLE_COLOR[ur.role]}`}>
+                  {ROLE_LABEL[ur.role]}
+                </span>
+                {isOwner && ur.profiles?.id !== me?.id && ur.role !== 'owner' && (
+                  <div className="flex gap-1 shrink-0">
+                    <button onClick={() => startEdit(ur)}
+                      className="text-gray-400 hover:text-kicks-navy transition-colors p-1" title="Editar">
+                      ✏️
+                    </button>
+                    <button onClick={() => deleteUser(ur)}
+                      className="text-gray-400 hover:text-red-500 transition-colors p-1" title="Excluir">
+                      🗑️
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ── Formulário de edição inline ── */
+              <div className="px-4 py-4 bg-gray-50 space-y-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Editar usuário</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="label">Nome</label>
+                    <input
+                      className="input"
+                      value={editForm.full_name}
+                      onChange={e => setEditForm(f => ({ ...f, full_name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Perfil</label>
+                    <select
+                      className="input"
+                      value={editForm.role}
+                      onChange={e => setEditForm(f => ({ ...f, role: e.target.value, cost_center_id: '' }))}
+                    >
+                      <option value="partner">Sócio (acessa tudo)</option>
+                      <option value="area_manager">Responsável de área</option>
+                    </select>
+                  </div>
+                  {editForm.role === 'area_manager' && (
+                    <div>
+                      <label className="label">Área</label>
+                      <select
+                        className="input"
+                        value={editForm.cost_center_id}
+                        onChange={e => setEditForm(f => ({ ...f, cost_center_id: e.target.value }))}
+                      >
+                        <option value="">Selecione...</option>
+                        {costCenters.map(cc => <option key={cc.id} value={cc.id}>{cc.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button
+                    onClick={() => setEditingId(null)}
+                    className="text-sm px-4 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-gray-400 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={saveEdit}
+                    disabled={saving}
+                    className="text-sm px-4 py-1.5 rounded-lg bg-kicks-navy text-white hover:bg-kicks-navy/90 disabled:opacity-50 transition-colors"
+                  >
+                    {saving ? 'Salvando...' : 'Salvar'}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         ))}
+
+        {!loading && users.length === 0 && (
+          <p className="text-sm text-gray-400">Nenhum usuário cadastrado.</p>
+        )}
       </div>
     </Section>
   )
