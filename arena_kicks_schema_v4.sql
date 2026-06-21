@@ -265,9 +265,11 @@ create index on enrollments          (student_id, status);
 
 -- Cria perfil automaticamente ao criar usuário Supabase Auth
 create or replace function handle_new_user()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer
+set search_path = ''
+as $$
 begin
-  insert into profiles (id, full_name)
+  insert into public.profiles (id, full_name)
   values (new.id, coalesce(new.raw_user_meta_data->>'full_name', 'Usuário'));
   return new;
 end;
@@ -313,16 +315,31 @@ create trigger trg_reconciliation_status
 -- Chamada: supabase.rpc('generate_monthly_fees', { p_month: '2026-06-01' })
 -- Retorna: número de mensalidades criadas
 create or replace function generate_monthly_fees(p_month date)
-returns int language plpgsql security definer as $$
+returns int language plpgsql security definer
+set search_path = ''
+as $$
 declare
   v_enrollment  record;
   v_due_date    date;
   v_count       int := 0;
   v_month_start date := date_trunc('month', p_month)::date;
 begin
+  if auth.uid() is null then
+    raise exception 'Não autenticado.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.user_roles
+    where user_id = auth.uid()
+      and role in ('owner', 'partner')
+  ) then
+    raise exception 'Sem permissão para gerar mensalidades.';
+  end if;
+
   for v_enrollment in
     select e.id, e.monthly_amount, e.due_day
-    from enrollments e
+    from public.enrollments e
     where e.status = 'active'
   loop
     -- Calcula vencimento no mês correto
@@ -333,7 +350,7 @@ begin
     );
 
     -- Insere apenas se não existir ainda
-    insert into monthly_fees (enrollment_id, reference_month, amount, due_date)
+    insert into public.monthly_fees (enrollment_id, reference_month, amount, due_date)
     values (v_enrollment.id, v_month_start, v_enrollment.monthly_amount, v_due_date)
     on conflict (enrollment_id, reference_month) do nothing;
 
@@ -349,9 +366,24 @@ $$;
 -- Marca como inadimplente mensalidades vencidas e não pagas
 -- Chamada: supabase.rpc('update_overdue_fees')
 create or replace function update_overdue_fees()
-returns void language plpgsql security definer as $$
+returns void language plpgsql security definer
+set search_path = ''
+as $$
 begin
-  update monthly_fees
+  if auth.uid() is null then
+    raise exception 'Não autenticado.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.user_roles
+    where user_id = auth.uid()
+      and role in ('owner', 'partner')
+  ) then
+    raise exception 'Sem permissão para atualizar mensalidades.';
+  end if;
+
+  update public.monthly_fees
   set    status = 'overdue'
   where  status = 'pending'
   and    due_date < current_date;
@@ -365,7 +397,7 @@ create or replace function insert_expense_with_allocations(
   p_expense     jsonb,
   p_allocations jsonb
 ) returns void language plpgsql security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_uid        uuid    := auth.uid();
@@ -373,6 +405,9 @@ declare
   v_cc         uuid;
   v_is_general boolean := (p_expense->>'is_general')::boolean;
   v_cc_id      uuid    := (p_expense->>'cost_center_id')::uuid;
+  v_amount     numeric := (p_expense->>'amount')::numeric;
+  v_alloc_pct  numeric;
+  v_alloc_sum  numeric;
   v_expense_id uuid;
   v_alloc      jsonb;
 begin
@@ -387,8 +422,44 @@ begin
     raise exception 'Sem permissão para lançar despesas.';
   end if;
 
-  if v_role = 'area_manager' and not v_is_general and v_cc_id is distinct from v_cc then
+  if v_role not in ('owner', 'partner', 'area_manager') then
+    raise exception 'Sem permissão para lançar despesas.';
+  end if;
+
+  if v_role = 'area_manager' and v_is_general then
+    raise exception 'Responsável de área não pode lançar despesas gerais.';
+  end if;
+
+  if v_role = 'area_manager' and v_cc_id is distinct from v_cc then
     raise exception 'Responsável de área só pode lançar despesas da sua própria área.';
+  end if;
+
+  if v_is_general and v_cc_id is not null then
+    raise exception 'Despesa geral não pode ter centro de custo direto.';
+  end if;
+
+  if not v_is_general and v_cc_id is null then
+    raise exception 'Centro de custo é obrigatório para despesa não geral.';
+  end if;
+
+  if not v_is_general and jsonb_array_length(coalesce(p_allocations, '[]'::jsonb)) > 0 then
+    raise exception 'Despesa não geral não pode possuir rateio.';
+  end if;
+
+  if v_is_general then
+    select
+      coalesce(sum((item->>'percentage')::numeric), 0),
+      coalesce(sum((item->>'amount')::numeric), 0)
+    into v_alloc_pct, v_alloc_sum
+    from jsonb_array_elements(coalesce(p_allocations, '[]'::jsonb)) item;
+
+    if abs(v_alloc_pct - 100) > 0.01 then
+      raise exception 'O rateio da despesa geral deve totalizar 100%%.';
+    end if;
+
+    if abs(v_alloc_sum - v_amount) > 0.01 then
+      raise exception 'A soma dos valores rateados deve corresponder ao valor da despesa.';
+    end if;
   end if;
 
   insert into public.expenses (
@@ -401,7 +472,7 @@ begin
     (p_expense->>'sub_area_id')::uuid,
     (p_expense->>'category_id')::uuid,
      p_expense->>'description',
-    (p_expense->>'amount')::numeric,
+    v_amount,
      p_expense->>'payment_method',
     v_is_general,
      p_expense->>'supplier_name',
@@ -425,7 +496,7 @@ $$;
 -- Chamada: supabase.rpc('get_invite_by_token', { p_token })
 create or replace function get_invite_by_token(p_token uuid)
 returns jsonb language plpgsql security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_invite record;
@@ -455,12 +526,14 @@ $$;
 
 -- Aceita convite: usa auth.uid() para evitar falsificação de identidade
 -- Chamada: supabase.rpc('accept_invite', { p_token })
+drop function if exists accept_invite(uuid, uuid);
 create or replace function accept_invite(p_token uuid)
 returns jsonb language plpgsql security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_user_id uuid    := auth.uid();
+  v_email   text    := lower(coalesce(auth.jwt()->>'email', ''));
   v_invite  record;
 begin
   if v_user_id is null then
@@ -477,9 +550,16 @@ begin
     return jsonb_build_object('error', 'Convite inválido ou expirado.');
   end if;
 
+  if v_email = '' or v_email <> lower(v_invite.email) then
+    return jsonb_build_object('error', 'O convite pertence a outro endereço de e-mail.');
+  end if;
+
+  if exists (select 1 from public.user_roles where user_id = v_user_id) then
+    return jsonb_build_object('error', 'Este usuário já possui um perfil de acesso.');
+  end if;
+
   insert into public.user_roles (user_id, role, cost_center_id)
-  values (v_user_id, v_invite.role, v_invite.cost_center_id)
-  on conflict do nothing;
+  values (v_user_id, v_invite.role, v_invite.cost_center_id);
 
   update public.invites set accepted_at = now() where id = v_invite.id;
 
@@ -508,13 +588,17 @@ alter table monthly_fees        enable row level security;
 
 -- Helpers de role
 create or replace function my_role()
-returns text language sql security definer stable as $$
-  select role from user_roles where user_id = auth.uid() limit 1;
+returns text language sql security definer stable
+set search_path = ''
+as $$
+  select role from public.user_roles where user_id = auth.uid() limit 1;
 $$;
 
 create or replace function my_cc()
-returns uuid language sql security definer stable as $$
-  select cost_center_id from user_roles where user_id = auth.uid() limit 1;
+returns uuid language sql security definer stable
+set search_path = ''
+as $$
+  select cost_center_id from public.user_roles where user_id = auth.uid() limit 1;
 $$;
 
 -- cost_centers
@@ -643,6 +727,8 @@ revoke execute on function get_invite_by_token(uuid)                      from p
 revoke execute on function accept_invite(uuid)                            from public;
 revoke execute on function generate_monthly_fees(date)                    from public;
 revoke execute on function update_overdue_fees()                          from public;
+revoke execute on function my_role()                                      from public;
+revoke execute on function my_cc()                                        from public;
 
 -- Conceder apenas ao role correto
 grant execute on function insert_expense_with_allocations(jsonb, jsonb) to authenticated;
@@ -650,3 +736,5 @@ grant execute on function get_invite_by_token(uuid)                      to anon
 grant execute on function accept_invite(uuid)                            to authenticated;
 grant execute on function generate_monthly_fees(date)                    to authenticated;
 grant execute on function update_overdue_fees()                          to authenticated;
+grant execute on function my_role()                                      to authenticated;
+grant execute on function my_cc()                                        to authenticated;

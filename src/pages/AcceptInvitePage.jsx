@@ -10,23 +10,46 @@ export default function AcceptInvitePage() {
   const [loading,  setLoading]  = useState(true)
   const [saving,   setSaving]   = useState(false)
   const [error,    setError]    = useState('')
+  const [confirmationSent, setConfirmationSent] = useState(false)
 
   const token = params.get('token')
 
   useEffect(() => {
     if (!token) { setError('Link inválido.'); setLoading(false); return }
     supabase.rpc('get_invite_by_token', { p_token: token })
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (error || !data || data.error) { setError('Convite não encontrado.') }
         else if (data.accepted_at)        { setError('Este convite já foi utilizado.') }
         else if (new Date(data.expires_at) < new Date()) { setError('Este convite expirou.') }
-        else setInvite({
-          ...data,
-          cost_centers: data.cost_center_name ? { name: data.cost_center_name } : null,
-        })
+        else {
+          setInvite({
+            ...data,
+            cost_centers: data.cost_center_name ? { name: data.cost_center_name } : null,
+          })
+
+          // Após confirmar o e-mail, o Supabase retorna a esta URL com a sessão ativa.
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.user) {
+            if (session.user.email?.toLowerCase() !== data.email.toLowerCase()) {
+              setInvite(null)
+              setError('Este convite pertence a outro endereço de e-mail.')
+            } else {
+              const { data: accepted, error: acceptError } = await supabase.rpc('accept_invite', {
+                p_token: token,
+              })
+              if (acceptError || accepted?.error) {
+                setInvite(null)
+                setError(acceptError?.message || accepted.error)
+              } else {
+                navigate('/', { replace: true })
+                return
+              }
+            }
+          }
+        }
         setLoading(false)
       })
-  }, [token])
+  }, [navigate, token])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -39,12 +62,20 @@ export default function AcceptInvitePage() {
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email:    invite.email,
         password: form.password,
-        options:  { data: { full_name: form.full_name } },
+        options:  {
+          data: { full_name: form.full_name },
+          emailRedirectTo: `${window.location.origin}/convite?token=${encodeURIComponent(token)}`,
+        },
       })
       if (signUpError) throw signUpError
 
       const userId = authData.user?.id
       if (!userId) throw new Error('Erro ao criar usuário.')
+
+      if (!authData.session) {
+        setConfirmationSent(true)
+        return
+      }
 
       // Atribuir role e marcar convite como aceito (RPC atômica — usa auth.uid())
       const { data: acceptData, error: acceptErr } = await supabase.rpc('accept_invite', {
@@ -82,7 +113,16 @@ export default function AcceptInvitePage() {
             </div>
           )}
 
-          {!loading && invite && (
+          {!loading && invite && confirmationSent && (
+            <div className="text-center py-4">
+              <p className="font-bold text-kicks-navy mb-2">Confirme seu e-mail</p>
+              <p className="text-sm text-gray-500">
+                Enviamos uma confirmação para {invite.email}. Ao abrir o link, seu acesso será concluído automaticamente.
+              </p>
+            </div>
+          )}
+
+          {!loading && invite && !confirmationSent && (
             <>
               <div className="bg-kicks-navy/5 rounded-lg p-3 mb-5">
                 <p className="text-sm text-gray-600">Você foi convidado como</p>
