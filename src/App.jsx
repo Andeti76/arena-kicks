@@ -89,6 +89,12 @@ function PublicRoute({ children }) {
   return user ? <Navigate to="/" replace /> : children
 }
 
+function OwnerRoute({ children }) {
+  const { isOwner, isPartner, loading } = useAuth()
+  if (loading) return null
+  return (isOwner || isPartner) ? children : <Navigate to="/" replace />
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -110,7 +116,7 @@ export default function App() {
           <Route path="eventos" element={<EventosPage />} />
           <Route path="patrocinadores" element={<PatrocinadoresPage />} />
           <Route path="dre" element={<DREPage />} />
-          <Route path="configuracoes" element={<SettingsPage />} />
+          <Route path="configuracoes" element={<OwnerRoute><SettingsPage /></OwnerRoute>} />
         </Route>
 
         {/* Fallback */}
