@@ -65,7 +65,7 @@ export default function TopBar({ onMenuClick }) {
                 `flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-[11px] font-bold transition-all ${
                   isActive
                     ? 'border-kicks-gold/40 bg-kicks-gold text-kicks-navy shadow-lg shadow-black/15'
-                    : 'border-white/[.12] bg-white/[.065] text-white/82'
+                    : 'border-white/[.16] bg-white/[.07] text-white/[.88] hover:bg-white/[.11] hover:text-white'
                 }`
               }
             >
