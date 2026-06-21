@@ -46,7 +46,7 @@ function UsersSection() {
       .from('user_roles')
       .select(`
         id, role, cost_center_id,
-        profiles!user_roles_user_id_fkey(id, full_name),
+        profiles!user_roles_user_id_fkey(id, full_name, last_seen_at),
         cost_centers(name)
       `)
       .order('role')
@@ -116,6 +116,22 @@ function UsersSection() {
     area_manager: 'bg-gray-100 text-gray-700',
   }
 
+  function isOnline(lastSeen) {
+    if (!lastSeen) return false
+    return Date.now() - new Date(lastSeen).getTime() < 3 * 60 * 1000
+  }
+
+  function lastSeenLabel(lastSeen) {
+    if (!lastSeen) return 'Nunca acessou'
+    const diff = Date.now() - new Date(lastSeen).getTime()
+    const min  = Math.floor(diff / 60000)
+    if (min < 3)  return 'Online agora'
+    if (min < 60) return `há ${min} min`
+    const h = Math.floor(min / 60)
+    if (h < 24)   return `há ${h}h`
+    return `há ${Math.floor(h / 24)}d`
+  }
+
   return (
     <Section title="Usuários com acesso">
       {loading && <p className="text-gray-400 text-sm">Carregando...</p>}
@@ -133,12 +149,19 @@ function UsersSection() {
             {/* ── Linha normal ── */}
             {editingId !== ur.id ? (
               <div className="flex items-center gap-3 px-4 py-3">
-                <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600 flex-shrink-0">
-                  {ur.profiles?.full_name?.charAt(0)?.toUpperCase() || '?'}
+                <div className="relative flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600">
+                    {ur.profiles?.full_name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                    isOnline(ur.profiles?.last_seen_at) ? 'bg-green-400' : 'bg-gray-300'
+                  }`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-800">{ur.profiles?.full_name || 'Usuário'}</p>
-                  {ur.cost_centers && <p className="text-xs text-gray-400">{ur.cost_centers.name}</p>}
+                  <p className="text-xs text-gray-400">
+                    {ur.cost_centers ? ur.cost_centers.name : lastSeenLabel(ur.profiles?.last_seen_at)}
+                  </p>
                 </div>
                 <span className={`text-xs font-medium px-2 py-1 rounded-full ${ROLE_COLOR[ur.role]}`}>
                   {ROLE_LABEL[ur.role]}

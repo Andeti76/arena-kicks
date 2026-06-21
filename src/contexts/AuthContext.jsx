@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
@@ -8,16 +8,15 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [role,    setRole]    = useState(null)
   const [loading, setLoading] = useState(true)
+  const heartbeatRef = useRef(null)
 
   useEffect(() => {
-    // Sessão inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) loadProfile(session.user.id)
       else setLoading(false)
     })
 
-    // Escuta mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) loadProfile(session.user.id)
@@ -25,10 +24,14 @@ export function AuthProvider({ children }) {
         setProfile(null)
         setRole(null)
         setLoading(false)
+        clearInterval(heartbeatRef.current)
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+      clearInterval(heartbeatRef.current)
+    }
   }, [])
 
   async function loadProfile(userId) {
@@ -39,6 +42,17 @@ export function AuthProvider({ children }) {
     setProfile(prof)
     setRole(roleData?.[0] ?? null)
     setLoading(false)
+    startHeartbeat(userId)
+  }
+
+  function startHeartbeat(userId) {
+    clearInterval(heartbeatRef.current)
+    const beat = () =>
+      supabase.from('profiles')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('id', userId)
+    beat()
+    heartbeatRef.current = setInterval(beat, 2 * 60 * 1000)
   }
 
   async function signIn(email, password) {
@@ -47,6 +61,7 @@ export function AuthProvider({ children }) {
   }
 
   async function signOut() {
+    clearInterval(heartbeatRef.current)
     await supabase.auth.signOut()
   }
 
@@ -57,8 +72,8 @@ export function AuthProvider({ children }) {
     return { error }
   }
 
-  const isOwner   = role?.role === 'owner'
-  const isPartner = role?.role === 'partner' || isOwner
+  const isOwner       = role?.role === 'owner'
+  const isPartner     = role?.role === 'partner' || isOwner
   const isAreaManager = role?.role === 'area_manager'
 
   return (
