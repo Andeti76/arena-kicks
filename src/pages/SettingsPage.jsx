@@ -143,7 +143,18 @@ function InviteSection() {
           cost_center_id: role === 'area_manager' ? ccId || null : null,
         },
       })
-      if (err) throw err
+      if (err) {
+        // Tenta extrair erro real da Edge Function (non-2xx)
+        if (err.context) {
+          try {
+            const body = await err.context.json()
+            throw new Error(body?.error || err.message)
+          } catch (parseErr) {
+            if (parseErr instanceof Error && parseErr.message !== err.message) throw parseErr
+          }
+        }
+        throw err
+      }
       if (data?.error) throw new Error(data.error)
 
       const inviteEmail = email.toLowerCase().trim()
