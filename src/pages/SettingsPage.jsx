@@ -94,7 +94,7 @@ function UsersSection() {
     )) return
 
     setError(null)
-    const { data, error: err } = await supabase.functions.invoke('delete-user', {
+    const { data, error: err } = await supabase.functions.invoke('delete-use', {
       body: { user_id: ur.profiles?.id },
     })
 
