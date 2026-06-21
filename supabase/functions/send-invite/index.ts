@@ -73,7 +73,7 @@ serve(async (req) => {
     const normalizedEmail = email.toLowerCase().trim()
 
     // ── Verifica se e-mail já tem conta no Auth ───────────────────────────
-    const { data: authUsers } = await supabase.auth.admin.listUsers()
+    const { data: authUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 })
     const alreadyRegistered = authUsers?.users?.some(
       (u) => u.email?.toLowerCase() === normalizedEmail,
     )

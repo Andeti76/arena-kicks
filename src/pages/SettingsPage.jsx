@@ -62,21 +62,16 @@ function UsersSection() {
     if (!editForm.full_name.trim()) { setError('Nome é obrigatório.'); return }
     setSaving(true); setError(null)
 
-    const [profileRes, roleRes] = await Promise.all([
-      supabase.from('profiles')
-        .update({ full_name: editForm.full_name.trim() })
-        .eq('id', ur.profiles.id),
-      supabase.from('user_roles')
-        .update({
-          role:           editForm.role,
-          cost_center_id: editForm.role === 'area_manager' ? (editForm.cost_center_id || null) : null,
-        })
-        .eq('id', ur.id),
-    ])
+    const { error: rpcErr } = await supabase.rpc('update_user_profile', {
+      p_user_id:       ur.profiles.id,
+      p_full_name:     editForm.full_name.trim(),
+      p_role:          editForm.role,
+      p_cost_center_id: editForm.role === 'area_manager' ? (editForm.cost_center_id || null) : null,
+    })
 
     setSaving(false)
-    if (profileRes.error || roleRes.error) {
-      setError(profileRes.error?.message ?? roleRes.error?.message)
+    if (rpcErr) {
+      setError(rpcErr.message)
       return
     }
     setEditingId(null)
