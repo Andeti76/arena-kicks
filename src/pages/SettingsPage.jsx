@@ -230,6 +230,7 @@ function InviteSection() {
   const [emailSent,     setEmailSent]     = useState(false)
   const [invites,       setInvites]       = useState([])
   const [copied,        setCopied]        = useState(null) // id do invite copiado
+  const { isOwner }                       = useAuth()
 
   useEffect(() => {
     supabase.from('cost_centers').select('id, name').eq('is_active', true).order('sort_order')
@@ -320,41 +321,43 @@ function InviteSection() {
   const ROLE_LABEL = { owner: 'Dono', partner: 'Sócio', area_manager: 'Responsável de área' }
 
   return (
-    <Section title="Convidar usuário">
-      <form onSubmit={sendInvite} className="space-y-4">
-        <div>
-          <label className="label">E-mail</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-            className="input" placeholder="usuario@email.com" required />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
+    <Section title={isOwner ? 'Convidar usuário' : 'Convites pendentes'}>
+      {isOwner && (
+        <form onSubmit={sendInvite} className="space-y-4">
           <div>
-            <label className="label">Perfil</label>
-            <select value={role} onChange={e => { setRole(e.target.value); setCcId('') }} className="input">
-              <option value="partner">Sócio (acessa tudo)</option>
-              <option value="area_manager">Responsável de área</option>
-            </select>
+            <label className="label">E-mail</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              className="input" placeholder="usuario@email.com" required />
           </div>
-          {role === 'area_manager' && (
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Área</label>
-              <select value={ccId} onChange={e => setCcId(e.target.value)} className="input" required>
-                <option value="">Selecione...</option>
-                {ccs.map(cc => <option key={cc.id} value={cc.id}>{cc.name}</option>)}
+              <label className="label">Perfil</label>
+              <select value={role} onChange={e => { setRole(e.target.value); setCcId('') }} className="input">
+                <option value="partner">Sócio (acessa tudo)</option>
+                <option value="area_manager">Responsável de área</option>
               </select>
             </div>
+            {role === 'area_manager' && (
+              <div>
+                <label className="label">Área</label>
+                <select value={ccId} onChange={e => setCcId(e.target.value)} className="input" required>
+                  <option value="">Selecione...</option>
+                  {ccs.map(cc => <option key={cc.id} value={cc.id}>{cc.name}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-500">{error}</p>
           )}
-        </div>
 
-        {error && (
-          <p className="text-sm text-red-500">{error}</p>
-        )}
-
-        <button type="submit" disabled={sending} className="btn-primary">
-          {sending ? 'Gerando...' : 'Gerar convite'}
-        </button>
-      </form>
+          <button type="submit" disabled={sending} className="btn-primary">
+            {sending ? 'Gerando...' : 'Gerar convite'}
+          </button>
+        </form>
+      )}
 
       {/* Link gerado após criar convite */}
       {createdInvite && (
@@ -405,10 +408,12 @@ function InviteSection() {
                       {' • '}Expira {fmtDate(inv.expires_at?.split('T')[0])}
                     </p>
                   </div>
-                  <button onClick={() => revokeInvite(inv.id)}
-                    className="text-xs text-red-400 hover:text-red-600 transition-colors shrink-0">
-                    Revogar
-                  </button>
+                  {isOwner && (
+                    <button onClick={() => revokeInvite(inv.id)}
+                      className="text-xs text-red-400 hover:text-red-600 transition-colors shrink-0">
+                      Revogar
+                    </button>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button

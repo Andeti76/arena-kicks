@@ -8,11 +8,11 @@ const navItems = [
   { to: '/eventos',         label: 'Sub-Áreas',      icon: '🏆' },
   { to: '/patrocinadores',  label: 'Patrocinadores', icon: '🤝' },
   { to: '/dre',             label: 'DRE',            icon: '📈' },
-  { to: '/configuracoes',   label: 'Configurações',  icon: '⚙️', ownerOnly: true },
+  { to: '/configuracoes',   label: 'Configurações',  icon: '⚙️', partnerOnly: true },
 ]
 
 export default function Sidebar({ open, onClose }) {
-  const { isOwner } = useAuth()
+  const { isOwner, isPartner } = useAuth()
 
   return (
     <>
@@ -72,6 +72,7 @@ export default function Sidebar({ open, onClose }) {
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
           {navItems.map(item => {
             if (item.ownerOnly && !isOwner) return null
+            if (item.partnerOnly && !isPartner) return null
             return (
               <NavLink
                 key={item.to}
