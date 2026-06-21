@@ -64,7 +64,7 @@ export default function AcceptInvitePage() {
         password: form.password,
         options:  {
           data: { full_name: form.full_name },
-          emailRedirectTo: `${window.location.origin}/convite?token=${encodeURIComponent(token)}`,
+          emailRedirectTo: `${window.location.origin}/convite?token=${token}`,
         },
       })
       if (signUpError) throw signUpError

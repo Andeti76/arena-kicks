@@ -87,7 +87,8 @@ function InviteSection() {
   const [ccs,           setCcs]           = useState([])
   const [sending,       setSending]       = useState(false)
   const [error,         setError]         = useState(null)
-  const [createdInvite, setCreatedInvite] = useState(null) // { email, link }
+  const [createdInvite, setCreatedInvite] = useState(null) // { email, token }
+  const [emailSent,     setEmailSent]     = useState(false)
   const [invites,       setInvites]       = useState([])
   const [copied,        setCopied]        = useState(null) // id do invite copiado
 
@@ -132,18 +133,24 @@ function InviteSection() {
     setSending(true)
     setError(null)
     setCreatedInvite(null)
+    setEmailSent(false)
 
     try {
-      const payload = {
-        email:          email.toLowerCase().trim(),
-        role,
-        cost_center_id: role === 'area_manager' ? ccId || null : null,
-      }
-      const { data, error: err } = await supabase
-        .from('invites').insert(payload).select('token').single()
+      const { data, error: err } = await supabase.functions.invoke('send-invite', {
+        body: {
+          email:          email.toLowerCase().trim(),
+          role,
+          cost_center_id: role === 'area_manager' ? ccId || null : null,
+        },
+      })
       if (err) throw err
+      if (data?.error) throw new Error(data.error)
 
-      setCreatedInvite({ email: payload.email, token: data.token, linkToken: data.token })
+      const inviteEmail = email.toLowerCase().trim()
+      setCreatedInvite({ email: inviteEmail, token: data.token, linkToken: data.token })
+      if (data.email_sent) {
+        setEmailSent(true)
+      }
       setEmail('')
       setCcId('')
       loadInvites()
@@ -206,7 +213,9 @@ function InviteSection() {
             ✅ Convite criado para <span className="font-bold">{createdInvite.email}</span>
           </p>
           <p className="text-xs text-green-700">
-            Copie o link abaixo e envie para o usuário. Ao abrir, ele poderá criar a senha e acessar o sistema.
+            {emailSent
+              ? 'E-mail enviado automaticamente! O link também está disponível abaixo caso queira compartilhar por outro meio.'
+              : 'Copie o link abaixo e envie para o usuário. Ao abrir, ele poderá criar a senha e acessar o sistema.'}
           </p>
           <div className="flex items-center gap-2 bg-white border border-green-200 rounded-lg px-3 py-2">
             <p className="text-xs text-gray-600 flex-1 truncate font-mono">

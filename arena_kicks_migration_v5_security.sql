@@ -236,8 +236,9 @@ begin
 end;
 $$;
 
--- Consulta pública por token opaco
-create or replace function public.get_invite_by_token(p_token uuid)
+-- Consulta pública por token (token é text hex de 64 chars, não uuid)
+drop function if exists public.get_invite_by_token(uuid);
+create or replace function public.get_invite_by_token(p_token text)
 returns jsonb
 language plpgsql
 security definer
@@ -270,10 +271,11 @@ begin
 end;
 $$;
 
--- Remove a assinatura insegura antiga, se ainda existir
+-- Remove assinaturas antigas (uuid ou uuid,uuid)
 drop function if exists public.accept_invite(uuid, uuid);
+drop function if exists public.accept_invite(uuid);
 
-create or replace function public.accept_invite(p_token uuid)
+create or replace function public.accept_invite(p_token text)
 returns jsonb
 language plpgsql
 security definer
@@ -363,16 +365,16 @@ with check (
 
 -- Permissões explícitas
 revoke execute on function public.insert_expense_with_allocations(jsonb, jsonb) from public;
-revoke execute on function public.get_invite_by_token(uuid) from public;
-revoke execute on function public.accept_invite(uuid) from public;
+revoke execute on function public.get_invite_by_token(text) from public;
+revoke execute on function public.accept_invite(text) from public;
 revoke execute on function public.generate_monthly_fees(date) from public;
 revoke execute on function public.update_overdue_fees() from public;
 revoke execute on function public.my_role() from public;
 revoke execute on function public.my_cc() from public;
 
 grant execute on function public.insert_expense_with_allocations(jsonb, jsonb) to authenticated;
-grant execute on function public.get_invite_by_token(uuid) to anon, authenticated;
-grant execute on function public.accept_invite(uuid) to authenticated;
+grant execute on function public.get_invite_by_token(text) to anon, authenticated;
+grant execute on function public.accept_invite(text) to authenticated;
 grant execute on function public.generate_monthly_fees(date) to authenticated;
 grant execute on function public.update_overdue_fees() to authenticated;
 grant execute on function public.my_role() to authenticated;
