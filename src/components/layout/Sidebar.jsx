@@ -12,25 +12,13 @@ const navItems = [
   { to: '/configuracoes', label: 'Configurações', icon: 'settings', partnerOnly: true },
 ]
 
-export default function Sidebar({ open, onClose }) {
+export default function Sidebar() {
   const { isOwner, isPartner } = useAuth()
 
   return (
     <>
-      {open && (
-        <div
-          className="fixed inset-0 z-20 bg-[#071827]/70 backdrop-blur-sm md:hidden"
-          onClick={onClose}
-        />
-      )}
-
       <aside
-        className={`
-          fixed inset-y-0 left-0 z-30 flex w-[272px] flex-col
-          transform overflow-hidden transition-transform duration-300
-          ${open ? 'translate-x-0' : '-translate-x-full'}
-          md:relative md:flex md:translate-x-0
-        `}
+        className="relative z-30 hidden w-[272px] flex-col overflow-hidden md:flex"
         style={{
           background:
             'radial-gradient(circle at 50% -5%, rgba(201,154,46,.20), transparent 25%), linear-gradient(180deg, #0B2238 0%, #081D30 64%, #071827 100%)',
@@ -84,7 +72,6 @@ export default function Sidebar({ open, onClose }) {
                 key={item.to}
                 to={item.to}
                 end={item.to === '/'}
-                onClick={onClose}
                 className={({ isActive }) =>
                   `group relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition-all duration-200 ${
                     isActive

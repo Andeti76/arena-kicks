@@ -22,24 +22,17 @@ const titles = {
   '/configuracoes': 'Configurações',
 }
 
-export default function TopBar({ onMenuClick }) {
+export default function TopBar() {
   const { profile, isPartner } = useAuth()
   const { pathname } = useLocation()
   const initials = profile?.full_name
     ? profile.full_name.split(' ').slice(0, 2).map(name => name[0]).join('').toUpperCase()
     : '?'
+  const firstName = profile?.full_name?.trim().split(' ')[0] || 'Usuário'
 
   return (
     <div className="relative z-10 border-b border-white/10 bg-kicks-navy shadow-lg md:hidden">
       <header className="flex items-center gap-3 px-4 py-3">
-        <button
-          onClick={onMenuClick}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[.06] text-white/80"
-          aria-label="Abrir perfil e opções"
-        >
-          <Icon name="menu" size={20} />
-        </button>
-
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <img src="/logo2.png" alt="Arena Kicks" className="h-9 w-9 object-contain drop-shadow-md" />
           <div className="min-w-0">
@@ -48,8 +41,14 @@ export default function TopBar({ onMenuClick }) {
           </div>
         </div>
 
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-kicks-gold-light to-kicks-gold text-xs font-extrabold text-kicks-navy">
-          {initials}
+        <div className="flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[.055] py-1.5 pl-3 pr-1.5">
+          <div className="max-w-[92px] text-right">
+            <p className="truncate text-[9px] font-semibold uppercase tracking-[.12em] text-white/35">Olá</p>
+            <p className="truncate text-xs font-bold text-white">{firstName}</p>
+          </div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-kicks-gold-light to-kicks-gold text-[11px] font-extrabold text-kicks-navy">
+            {initials}
+          </div>
         </div>
       </header>
 
