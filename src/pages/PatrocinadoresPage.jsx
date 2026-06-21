@@ -47,7 +47,8 @@ export default function PatrocinadoresPage() {
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState(null)
   const [success, setSuccess]     = useState(null)
-  const [editingId, setEditingId] = useState(null)
+  const [editingId, setEditingId]             = useState(null)
+  const [editingPaymentId, setEditingPaymentId] = useState(null)
 
   // ── Busca patrocinadores ──
   const loadSponsors = useCallback(async () => {
@@ -124,19 +125,42 @@ export default function PatrocinadoresPage() {
     }
     setSaving(true); setError(null)
 
-    const { error: err } = await supabase.from('sponsor_payments').insert({
-      sponsor_id:   paymentForm.sponsor_id,
-      payment_date: paymentForm.payment_date,
-      amount:       parseFloat(paymentForm.amount),
-      notes:        paymentForm.notes || null,
-    })
+    let err
+    if (editingPaymentId) {
+      ;({ error: err } = await supabase.from('sponsor_payments').update({
+        sponsor_id:   paymentForm.sponsor_id,
+        payment_date: paymentForm.payment_date,
+        amount:       parseFloat(paymentForm.amount),
+        notes:        paymentForm.notes || null,
+      }).eq('id', editingPaymentId))
+    } else {
+      ;({ error: err } = await supabase.from('sponsor_payments').insert({
+        sponsor_id:   paymentForm.sponsor_id,
+        payment_date: paymentForm.payment_date,
+        amount:       parseFloat(paymentForm.amount),
+        notes:        paymentForm.notes || null,
+      }))
+    }
 
     setSaving(false)
     if (err) { setError(err.message); return }
     setPaymentForm(EMPTY_PAYMENT)
+    setEditingPaymentId(null)
     await loadPayments()
-    flash('Pagamento registrado!')
+    flash(editingPaymentId ? 'Pagamento atualizado!' : 'Pagamento registrado!')
     setTab('lista')
+  }
+
+  const handleEditPayment = (p) => {
+    setPaymentForm({
+      sponsor_id:   p.sponsor_id,
+      payment_date: p.payment_date,
+      amount:       String(p.amount),
+      notes:        p.notes ?? '',
+    })
+    setEditingPaymentId(p.id)
+    setError(null)
+    setTab('pagamento')
   }
 
   const handleArchive = async (sp) => {
@@ -369,13 +393,22 @@ export default function PatrocinadoresPage() {
                     </div>
                     <span className="font-bold text-green-600 text-sm shrink-0">+{fmt(p.amount)}</span>
                     {isOwner && (
-                      <button
-                        onClick={() => handleDeletePayment(p)}
-                        className="text-gray-300 hover:text-red-500 transition-colors shrink-0"
-                        title="Excluir pagamento"
-                      >
-                        🗑️
-                      </button>
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          onClick={() => handleEditPayment(p)}
+                          className="text-gray-400 hover:text-kicks-navy transition-colors"
+                          title="Editar pagamento"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleDeletePayment(p)}
+                          className="text-gray-300 hover:text-red-500 transition-colors"
+                          title="Excluir pagamento"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -493,7 +526,7 @@ export default function PatrocinadoresPage() {
         <form onSubmit={handleSavePayment} className="space-y-5 max-w-xl">
           <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm space-y-4">
             <h2 className="font-semibold text-kicks-navy text-sm uppercase tracking-wide">
-              Registrar Pagamento Recebido
+              {editingPaymentId ? 'Editar Pagamento' : 'Registrar Pagamento Recebido'}
             </h2>
 
             <div className="grid grid-cols-2 gap-4">
@@ -506,9 +539,11 @@ export default function PatrocinadoresPage() {
                   required
                 >
                   <option value="">Selecione...</option>
-                  {sponsors.filter(s => s.status === 'ativo').map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
+                  {sponsors
+                    .filter(s => s.status === 'ativo' || s.id === paymentForm.sponsor_id)
+                    .map(s => (
+                      <option key={s.id} value={s.id}>{s.name}{s.status === 'inativo' ? ' (inativo)' : ''}</option>
+                    ))}
                 </select>
               </div>
               <div>
@@ -569,14 +604,23 @@ export default function PatrocinadoresPage() {
             <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg px-4 py-3 text-sm">{error}</div>
           )}
 
-          <div className="flex justify-end">
+          <div className="flex gap-3 justify-end">
+            {editingPaymentId && (
+              <button
+                type="button"
+                onClick={() => { setEditingPaymentId(null); setPaymentForm(EMPTY_PAYMENT); setTab('lista') }}
+                className="px-5 py-2.5 rounded-lg border border-gray-200 text-gray-600 text-sm font-medium hover:border-gray-400 transition-colors"
+              >
+                Cancelar
+              </button>
+            )}
             <button
               type="submit"
               disabled={saving}
               className="px-6 py-2.5 rounded-lg bg-kicks-navy text-white font-semibold text-sm
                          hover:bg-kicks-navy/90 disabled:opacity-50 transition-colors"
             >
-              {saving ? 'Salvando...' : 'Registrar Pagamento'}
+              {saving ? 'Salvando...' : editingPaymentId ? 'Atualizar Pagamento' : 'Registrar Pagamento'}
             </button>
           </div>
         </form>
