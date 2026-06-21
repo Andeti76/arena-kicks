@@ -120,7 +120,7 @@ revoke execute on function public.insert_expense_with_allocations(jsonb, jsonb) 
 grant  execute on function public.insert_expense_with_allocations(jsonb, jsonb) to authenticated;
 
 -- ────────────────────────────────────────────────────────────
--- 3. update_user_profile
+-- 3. update_user_profile — versão corrigida com validações completas
 -- ────────────────────────────────────────────────────────────
 drop function if exists public.update_user_profile(uuid, text, text, uuid);
 
@@ -135,7 +135,9 @@ set search_path = ''
 as $$
 declare
   v_caller_role text;
+  v_target_role text;
 begin
+  -- Só owner pode chamar
   select role into v_caller_role
   from public.user_roles
   where user_id = auth.uid() limit 1;
@@ -144,10 +146,48 @@ begin
     raise exception 'Apenas o dono pode alterar perfis de usuário.';
   end if;
 
+  -- Busca role atual do alvo
+  select role into v_target_role
+  from public.user_roles
+  where user_id = p_user_id limit 1;
+
+  if not found then
+    raise exception 'Usuário não encontrado.';
+  end if;
+
+  -- Não pode alterar outro owner
+  if v_target_role = 'owner' then
+    raise exception 'Não é possível alterar o perfil de outro dono.';
+  end if;
+
+  -- Não pode promover a owner
+  if p_role = 'owner' then
+    raise exception 'Não é possível promover um usuário a dono por aqui.';
+  end if;
+
+  -- area_manager exige centro de custo
+  if p_role = 'area_manager' and p_cost_center_id is null then
+    raise exception 'Responsável de área precisa de um centro de custo.';
+  end if;
+
+  -- Verifica se CC existe quando informado
+  if p_cost_center_id is not null and not exists (
+    select 1 from public.cost_centers where id = p_cost_center_id
+  ) then
+    raise exception 'Centro de custo não encontrado.';
+  end if;
+
+  -- Atualiza metadata do auth
   update auth.users
   set raw_user_meta_data = raw_user_meta_data || jsonb_build_object('full_name', p_full_name)
   where id = p_user_id;
 
+  -- Atualiza profiles (nome visível na UI)
+  update public.profiles
+  set full_name = p_full_name
+  where id = p_user_id;
+
+  -- Atualiza role e CC
   update public.user_roles
   set role           = p_role,
       cost_center_id = case when p_role = 'area_manager' then p_cost_center_id else null end

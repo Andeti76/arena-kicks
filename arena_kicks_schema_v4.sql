@@ -75,7 +75,7 @@ create table invites (
   email          text not null,
   role           text not null check (role in ('partner','area_manager')),
   cost_center_id uuid references cost_centers(id),
-  token          uuid not null default gen_random_uuid(),
+  token          text not null default encode(gen_random_bytes(32), 'hex'),
   expires_at     timestamptz not null default (now() + interval '7 days'),
   accepted_at    timestamptz,
   created_at     timestamptz not null default now()
