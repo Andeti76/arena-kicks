@@ -50,7 +50,6 @@ export default function AcceptInvitePage() {
         user_id:        userId,
         role:           invite.role,
         cost_center_id: invite.cost_center_id || null,
-        invited_by:     null,
       })
 
       // Marcar convite como aceito

@@ -25,7 +25,7 @@ export default function TopBar({ onMenuClick }) {
         <img
           src="/logo2.png"
           alt="Arena Kicks"
-          style={{ height: '40px', width: 'auto', display: 'block' }}
+          style={{ height: '40px', width: 'auto', objectFit: 'contain', display: 'block' }}
           onError={e => { e.currentTarget.style.display = 'none' }}
         />
       </div>

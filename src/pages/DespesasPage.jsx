@@ -86,6 +86,7 @@ export default function DespesasPage() {
   // ── Busca lista de despesas ──
   const loadExpenses = useCallback(async () => {
     setLoading(true)
+    setError(null)
     const [year, month] = filterMonth.split('-')
     const start = `${year}-${month}-01`
     const end   = new Date(Number(year), Number(month), 0).toISOString().split('T')[0]
@@ -103,8 +104,9 @@ export default function DespesasPage() {
 
     if (filterCC) q = q.eq('cost_center_id', filterCC)
 
-    const { data } = await q
+    const { data, error: loadErr } = await q
     setLoading(false)
+    if (loadErr) { setError('Erro ao carregar histórico: ' + loadErr.message); return }
     setExpenses(data ?? [])
   }, [filterMonth, filterCC])
 
@@ -169,6 +171,9 @@ export default function DespesasPage() {
     setForm({ ...EMPTY_FORM, expense_date: form.expense_date })
     setAlloc({})
     setTimeout(() => setSuccess(false), 3000)
+    // Vai direto para o histórico e recarrega
+    setTab('list')
+    loadExpenses()
   }
 
   // ─── Render ─────────────────────────────────────────────────────────────

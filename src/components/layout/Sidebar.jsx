@@ -40,20 +40,11 @@ export default function Sidebar({ open, onClose }) {
         {/* ── Logo ── */}
         <div className="flex flex-col items-center px-6 pt-7 pb-6">
           {/* Logo circle */}
-          <div
-            style={{
-              background: 'rgba(255,255,255,0.07)',
-              borderRadius: '50%',
-              padding: '10px',
-              border: '1.5px solid rgba(201,154,46,0.35)',
-              marginBottom: '12px',
-              boxShadow: '0 0 20px rgba(201,154,46,0.12)',
-            }}
-          >
+          <div style={{ marginBottom: '12px' }}>
             <img
               src="/logo2.png"
               alt="Arena Kicks"
-              style={{ width: '72px', height: '72px', objectFit: 'contain', display: 'block' }}
+              style={{ width: '80px', height: '80px', objectFit: 'contain', display: 'block', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))' }}
             />
           </div>
 

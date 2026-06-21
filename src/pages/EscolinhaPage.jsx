@@ -1,3 +1,8 @@
+// MÓDULO FUTURO — aguardando ativação por Marcus (dono da arena)
+// Código completo e funcional. Para ativar:
+//   1. Adicionar rota em App.jsx:  <Route path="escolinha" element={<EscolinhaPage />} />
+//   2. Adicionar item em Sidebar.jsx: { to: '/escolinha', label: 'Escolinha', icon: '⚽' }
+//   3. Garantir que as RPCs generate_monthly_fees e update_overdue_fees existam no Supabase
 import { useState } from 'react'
 import { Routes, Route, NavLink } from 'react-router-dom'
 import { useStudents, useMonthlyFees } from '../hooks/useEscolinha'

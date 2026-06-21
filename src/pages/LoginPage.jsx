@@ -63,19 +63,14 @@ export default function LoginPage() {
         <div className="flex flex-col items-center mb-8">
           <div
             style={{
-              background: 'rgba(255,255,255,0.08)',
-              borderRadius: '50%',
-              padding: '12px',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(201,154,46,0.3)',
               marginBottom: '20px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+              filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.5))',
             }}
           >
             <img
               src="/logo.png"
               alt="Arena Kicks"
-              style={{ width: '120px', height: '120px', objectFit: 'contain', display: 'block' }}
+              style={{ width: '140px', height: '140px', objectFit: 'contain', display: 'block' }}
             />
           </div>
           <p
