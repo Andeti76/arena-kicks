@@ -7,6 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: null,
       includeAssets: ['logo.png', 'icons/*.png'],
       manifest: {
         name: 'Arena Kicks Jacareí',
