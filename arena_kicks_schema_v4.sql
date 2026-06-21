@@ -3,11 +3,18 @@
 -- Gerado em 2026-06-20, reconstruído a partir do código-fonte
 -- Reflete o estado real do banco em produção
 --
+-- ⚠️  ATENÇÃO — SCRIPT DESTRUTIVO PARA INSTALAÇÃO LIMPA
+-- Este arquivo apaga e recria todas as tabelas (DROP CASCADE).
+-- NÃO execute em produção com dados. Use migrações incrementais
+-- para aplicar mudanças em um banco já existente.
+--
 -- Mudanças em relação ao v3:
 --   + Tabelas: sponsors, sponsor_payments, modalities,
 --              students, enrollments, monthly_fees
 --   + Coluna:  expenses.supplier_name
---   + RPCs:    generate_monthly_fees, update_overdue_fees
+--   + RPCs:    generate_monthly_fees, update_overdue_fees,
+--              insert_expense_with_allocations,
+--              get_invite_by_token, accept_invite
 --   - Removido: events, event_transactions (não usados pelo frontend)
 --   - Removido: expenses.event_id (referenciava events)
 -- ============================================================
@@ -351,37 +358,59 @@ begin
 end;
 $$;
 
--- Insere despesa + rateio atomicamente (sem checar RLS — SECURITY DEFINER)
+-- Insere despesa + rateio atomicamente com validação de auth e role
 -- Chamada: supabase.rpc('insert_expense_with_allocations', { p_expense, p_allocations })
 drop function if exists insert_expense_with_allocations(jsonb, jsonb);
 create or replace function insert_expense_with_allocations(
   p_expense     jsonb,
   p_allocations jsonb
-) returns void language plpgsql security definer as $$
+) returns void language plpgsql security definer
+set search_path = public
+as $$
 declare
+  v_uid        uuid    := auth.uid();
+  v_role       text;
+  v_cc         uuid;
+  v_is_general boolean := (p_expense->>'is_general')::boolean;
+  v_cc_id      uuid    := (p_expense->>'cost_center_id')::uuid;
   v_expense_id uuid;
   v_alloc      jsonb;
 begin
-  insert into expenses (
+  if v_uid is null then
+    raise exception 'Não autenticado.';
+  end if;
+
+  select role, cost_center_id into v_role, v_cc
+  from   public.user_roles where user_id = v_uid limit 1;
+
+  if v_role is null then
+    raise exception 'Sem permissão para lançar despesas.';
+  end if;
+
+  if v_role = 'area_manager' and not v_is_general and v_cc_id is distinct from v_cc then
+    raise exception 'Responsável de área só pode lançar despesas da sua própria área.';
+  end if;
+
+  insert into public.expenses (
     expense_date, cost_center_id, sub_area_id, category_id,
     description, amount, payment_method, is_general,
     supplier_name, proof_note, created_by
   ) values (
     (p_expense->>'expense_date')::date,
-    (p_expense->>'cost_center_id')::uuid,
+    v_cc_id,
     (p_expense->>'sub_area_id')::uuid,
     (p_expense->>'category_id')::uuid,
      p_expense->>'description',
     (p_expense->>'amount')::numeric,
      p_expense->>'payment_method',
-    (p_expense->>'is_general')::boolean,
+    v_is_general,
      p_expense->>'supplier_name',
      p_expense->>'proof_note',
-    (p_expense->>'created_by')::uuid
+    v_uid
   ) returning id into v_expense_id;
 
   for v_alloc in select * from jsonb_array_elements(p_allocations) loop
-    insert into expense_allocations (expense_id, cost_center_id, percentage, amount)
+    insert into public.expense_allocations (expense_id, cost_center_id, percentage, amount)
     values (
       v_expense_id,
       (v_alloc->>'cost_center_id')::uuid,
@@ -392,18 +421,20 @@ begin
 end;
 $$;
 
--- Retorna dados do convite pelo token sem exigir autenticação
+-- Retorna dados do convite pelo token (acessível sem autenticação — anon)
 -- Chamada: supabase.rpc('get_invite_by_token', { p_token })
 create or replace function get_invite_by_token(p_token uuid)
-returns jsonb language plpgsql security definer as $$
+returns jsonb language plpgsql security definer
+set search_path = public
+as $$
 declare
   v_invite record;
 begin
   select i.id, i.email, i.role, i.cost_center_id, i.expires_at, i.accepted_at,
          cc.name as cost_center_name
   into   v_invite
-  from   invites i
-  left join cost_centers cc on cc.id = i.cost_center_id
+  from   public.invites i
+  left join public.cost_centers cc on cc.id = i.cost_center_id
   where  i.token = p_token;
 
   if not found then
@@ -422,15 +453,22 @@ begin
 end;
 $$;
 
--- Aceita convite: insere role e marca convite como aceito atomicamente
--- Chamada: supabase.rpc('accept_invite', { p_token, p_user_id })
-create or replace function accept_invite(p_token uuid, p_user_id uuid)
-returns jsonb language plpgsql security definer as $$
+-- Aceita convite: usa auth.uid() para evitar falsificação de identidade
+-- Chamada: supabase.rpc('accept_invite', { p_token })
+create or replace function accept_invite(p_token uuid)
+returns jsonb language plpgsql security definer
+set search_path = public
+as $$
 declare
-  v_invite record;
+  v_user_id uuid    := auth.uid();
+  v_invite  record;
 begin
+  if v_user_id is null then
+    return jsonb_build_object('error', 'Não autenticado.');
+  end if;
+
   select * into v_invite
-  from   invites
+  from   public.invites
   where  token = p_token
     and  accepted_at is null
     and  expires_at > now();
@@ -439,11 +477,11 @@ begin
     return jsonb_build_object('error', 'Convite inválido ou expirado.');
   end if;
 
-  insert into user_roles (user_id, role, cost_center_id)
-  values (p_user_id, v_invite.role, v_invite.cost_center_id)
+  insert into public.user_roles (user_id, role, cost_center_id)
+  values (v_user_id, v_invite.role, v_invite.cost_center_id)
   on conflict do nothing;
 
-  update invites set accepted_at = now() where id = v_invite.id;
+  update public.invites set accepted_at = now() where id = v_invite.id;
 
   return jsonb_build_object('ok', true);
 end;
@@ -594,3 +632,21 @@ from cost_centers c,
      ) as m(name, ord)
 where c.code = 'ESC'
 on conflict do nothing;
+
+-- ============================================================
+-- PERMISSÕES DE EXECUÇÃO DAS RPCs
+-- ============================================================
+
+-- Revogar acesso público padrão
+revoke execute on function insert_expense_with_allocations(jsonb, jsonb) from public;
+revoke execute on function get_invite_by_token(uuid)                      from public;
+revoke execute on function accept_invite(uuid)                            from public;
+revoke execute on function generate_monthly_fees(date)                    from public;
+revoke execute on function update_overdue_fees()                          from public;
+
+-- Conceder apenas ao role correto
+grant execute on function insert_expense_with_allocations(jsonb, jsonb) to authenticated;
+grant execute on function get_invite_by_token(uuid)                      to anon, authenticated;
+grant execute on function accept_invite(uuid)                            to authenticated;
+grant execute on function generate_monthly_fees(date)                    to authenticated;
+grant execute on function update_overdue_fees()                          to authenticated;

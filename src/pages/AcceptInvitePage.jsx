@@ -46,10 +46,9 @@ export default function AcceptInvitePage() {
       const userId = authData.user?.id
       if (!userId) throw new Error('Erro ao criar usuário.')
 
-      // Atribuir role e marcar convite como aceito (RPC atômica — bypassa RLS)
+      // Atribuir role e marcar convite como aceito (RPC atômica — usa auth.uid())
       const { data: acceptData, error: acceptErr } = await supabase.rpc('accept_invite', {
-        p_token:   token,
-        p_user_id: userId,
+        p_token: token,
       })
       if (acceptErr) throw acceptErr
       if (acceptData?.error) throw new Error(acceptData.error)
