@@ -72,14 +72,15 @@ export function AuthProvider({ children }) {
     return { error }
   }
 
-  const isOwner       = role?.role === 'owner'
+  const isPlatformAdmin = role?.role === 'platform_admin'
+  const isOwner       = role?.role === 'owner' || isPlatformAdmin
   const isPartner     = role?.role === 'partner' || isOwner
   const isAreaManager = role?.role === 'area_manager'
 
   return (
     <AuthContext.Provider value={{
       user, profile, role, loading,
-      isOwner, isPartner, isAreaManager,
+      isPlatformAdmin, isOwner, isPartner, isAreaManager,
       signIn, signOut, resetPassword,
       reloadProfile: () => user && loadProfile(user.id)
     }}>

@@ -93,7 +93,7 @@ export default function AcceptInvitePage() {
     }
   }
 
-  const ROLE_LABEL = { owner: 'Dono', partner: 'Sócio', area_manager: 'Responsável de área' }
+  const ROLE_LABEL = { owner: 'Dono da Arena', partner: 'Sócio', area_manager: 'Responsável de área' }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#071827]">

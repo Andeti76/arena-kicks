@@ -44,15 +44,15 @@ serve(async (req) => {
     )
     if (authErr || !user) return json({ error: 'Não autenticado.' }, 401, CORS)
 
-    // Apenas owner pode excluir usuários
+    // Administrador Andeti e dono podem excluir usuários dentro da hierarquia.
     const { data: callerRole } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .single()
 
-    if (callerRole?.role !== 'owner') {
-      return json({ error: 'Sem permissão. Apenas o dono pode excluir usuários.' }, 403, CORS)
+    if (!['platform_admin', 'owner'].includes(callerRole?.role ?? '')) {
+      return json({ error: 'Sem permissão para excluir usuários.' }, 403, CORS)
     }
 
     // Não pode excluir a si mesmo
@@ -60,15 +60,18 @@ serve(async (req) => {
       return json({ error: 'Não é possível excluir sua própria conta.' }, 400, CORS)
     }
 
-    // Não pode excluir outro owner
+    // O Administrador Andeti nunca pode ser excluído por esta função.
     const { data: targetRole } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user_id)
       .single()
 
-    if (targetRole?.role === 'owner') {
-      return json({ error: 'Não é possível excluir outro administrador.' }, 400, CORS)
+    if (targetRole?.role === 'platform_admin') {
+      return json({ error: 'Não é possível excluir o Administrador Andeti.' }, 400, CORS)
+    }
+    if (targetRole?.role === 'owner' && callerRole?.role !== 'platform_admin') {
+      return json({ error: 'Somente o Administrador Andeti pode excluir o dono da Arena.' }, 403, CORS)
     }
 
     // Exclui do auth.users → CASCADE: profiles → user_roles

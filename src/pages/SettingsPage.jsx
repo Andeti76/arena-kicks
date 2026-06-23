@@ -5,13 +5,18 @@ import { fmtDate } from '../lib/format'
 import Icon from '../components/ui/Icon'
 
 export default function SettingsPage() {
+  const { isPlatformAdmin } = useAuth()
   return (
     <div className="page-shell">
       <div className="page-header">
         <div>
           <p className="page-eyebrow">Administração</p>
           <h1 className="page-title">Configurações</h1>
-          <p className="page-subtitle">Gerencie acessos, perfis e convites da operação.</p>
+          <p className="page-subtitle">
+            {isPlatformAdmin
+              ? 'Administre o proprietário e os acessos da operação.'
+              : 'Gerencie acessos, perfis e convites da operação.'}
+          </p>
         </div>
       </div>
       <div className="space-y-6">
@@ -31,7 +36,7 @@ function UsersSection() {
   const [editForm, setEditForm]       = useState({ full_name: '', role: 'partner', cost_center_id: '' })
   const [saving, setSaving]           = useState(false)
   const [error, setError]             = useState(null)
-  const { user: me, isOwner }         = useAuth()
+  const { user: me, isOwner, isPlatformAdmin } = useAuth()
 
   useEffect(() => {
     load()
@@ -94,7 +99,7 @@ function UsersSection() {
     )) return
 
     setError(null)
-    const { data, error: err } = await supabase.functions.invoke('delete-use', {
+    const { data, error: err } = await supabase.functions.invoke('delete-user', {
       body: { user_id: ur.profiles?.id },
     })
 
@@ -109,8 +114,14 @@ function UsersSection() {
     load()
   }
 
-  const ROLE_LABEL = { owner: 'Dono', partner: 'Sócio', area_manager: 'Responsável de área' }
+  const ROLE_LABEL = {
+    platform_admin: 'Administrador Andeti',
+    owner: 'Dono da Arena',
+    partner: 'Sócio',
+    area_manager: 'Responsável de área',
+  }
   const ROLE_COLOR = {
+    platform_admin: 'bg-emerald-600 text-white',
     owner:        'bg-kicks-navy text-white',
     partner:      'bg-kicks-gold text-white',
     area_manager: 'bg-gray-100 text-gray-700',
@@ -166,7 +177,10 @@ function UsersSection() {
                 <span className={`text-xs font-medium px-2 py-1 rounded-full ${ROLE_COLOR[ur.role]}`}>
                   {ROLE_LABEL[ur.role]}
                 </span>
-                {isOwner && ur.profiles?.id !== me?.id && ur.role !== 'owner' && (
+                {isOwner &&
+                  ur.profiles?.id !== me?.id &&
+                  ur.role !== 'platform_admin' &&
+                  (isPlatformAdmin || ur.role !== 'owner') && (
                   <div className="flex gap-1 shrink-0">
                     <button onClick={() => startEdit(ur)}
                       className="icon-button h-8 w-8" title="Editar">
@@ -201,6 +215,7 @@ function UsersSection() {
                     >
                       <option value="partner">Sócio (acessa tudo)</option>
                       <option value="area_manager">Responsável de área</option>
+                      {isPlatformAdmin && <option value="owner">Dono da Arena</option>}
                     </select>
                   </div>
                   {editForm.role === 'area_manager' && (
@@ -257,7 +272,7 @@ function InviteSection() {
   const [emailSent,     setEmailSent]     = useState(false)
   const [invites,       setInvites]       = useState([])
   const [copied,        setCopied]        = useState(null) // id do invite copiado
-  const { isOwner }                       = useAuth()
+  const { isOwner, isPlatformAdmin }       = useAuth()
 
   useEffect(() => {
     supabase.from('cost_centers').select('id, name').eq('is_active', true).order('sort_order')
@@ -345,7 +360,11 @@ function InviteSection() {
     loadInvites()
   }
 
-  const ROLE_LABEL = { owner: 'Dono', partner: 'Sócio', area_manager: 'Responsável de área' }
+  const ROLE_LABEL = {
+    owner: 'Dono da Arena',
+    partner: 'Sócio',
+    area_manager: 'Responsável de área',
+  }
 
   return (
     <Section title={isOwner ? 'Convidar usuário' : 'Convites pendentes'}>
@@ -361,6 +380,7 @@ function InviteSection() {
             <div>
               <label className="label">Perfil</label>
               <select value={role} onChange={e => { setRole(e.target.value); setCcId('') }} className="input">
+                {isPlatformAdmin && <option value="owner">Dono da Arena</option>}
                 <option value="partner">Sócio (acessa tudo)</option>
                 <option value="area_manager">Responsável de área</option>
               </select>

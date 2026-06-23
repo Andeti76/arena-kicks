@@ -112,7 +112,7 @@ export default function Sidebar() {
 }
 
 function UserFooter() {
-  const { signOut, profile } = useAuth()
+  const { signOut, profile, isPlatformAdmin } = useAuth()
   const name = profile?.full_name ?? 'Usuário'
   const initials = name.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase()
 
@@ -125,7 +125,7 @@ function UserFooter() {
         <p className="truncate text-sm font-semibold leading-tight text-white">{name}</p>
         <p className="mt-1 flex items-center gap-1.5 text-[10px] text-white/38">
           <span className="live-dot h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.7)]" />
-          Sessão segura
+          {isPlatformAdmin ? 'Administrador Andeti' : 'Sessão segura'}
         </p>
       </div>
       <button

@@ -23,7 +23,7 @@ const titles = {
 }
 
 export default function TopBar() {
-  const { profile, isPartner, signOut } = useAuth()
+  const { profile, isPartner, isPlatformAdmin, signOut } = useAuth()
   const { pathname } = useLocation()
   const [profileOpen, setProfileOpen] = useState(false)
   const initials = profile?.full_name
@@ -83,7 +83,9 @@ export default function TopBar() {
         <div className="absolute right-3 top-[60px] z-30 w-56 overflow-hidden rounded-2xl border border-white/10 bg-[#0a2034]/95 p-2 shadow-[0_24px_55px_rgba(0,0,0,.38)] backdrop-blur-xl">
           <div className="border-b border-white/[.08] px-3 py-2.5">
             <p className="truncate text-sm font-bold text-white">{profile?.full_name || firstName}</p>
-            <p className="mt-0.5 text-[10px] font-medium text-white/40">Conta Arena Kicks</p>
+            <p className="mt-0.5 text-[10px] font-medium text-white/40">
+              {isPlatformAdmin ? 'Administrador Andeti' : 'Conta Arena Kicks'}
+            </p>
           </div>
 
           {isPartner && (

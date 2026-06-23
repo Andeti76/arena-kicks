@@ -22,6 +22,7 @@ function json(body: unknown, status = 200, cors: Record<string, string> = {}) {
 }
 
 const ROLE_LABEL: Record<string, string> = {
+  owner:        'Dono da Arena',
   partner:      'Sócio',
   area_manager: 'Responsável de área',
 }
@@ -39,8 +40,8 @@ serve(async (req) => {
     if (!email) {
       return json({ error: 'E-mail obrigatório.' }, 400, CORS)
     }
-    if (!['partner', 'area_manager'].includes(role)) {
-      return json({ error: 'Perfil inválido. Use "partner" ou "area_manager".' }, 400, CORS)
+    if (!['owner', 'partner', 'area_manager'].includes(role)) {
+      return json({ error: 'Perfil inválido.' }, 400, CORS)
     }
     if (role === 'area_manager' && !cost_center_id) {
       return json({ error: 'Centro de custo obrigatório para Responsável de área.' }, 400, CORS)
@@ -59,15 +60,18 @@ serve(async (req) => {
     )
     if (authErr || !user) return json({ error: 'Não autenticado.' }, 401, CORS)
 
-    // ── Apenas owner pode convidar ────────────────────────────────────────
+    // ── Hierarquia de convites ────────────────────────────────────────────
     const { data: roleRow } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .single()
 
-    if (roleRow?.role !== 'owner') {
-      return json({ error: 'Sem permissão. Apenas o dono pode convidar usuários.' }, 403, CORS)
+    if (!['platform_admin', 'owner'].includes(roleRow?.role ?? '')) {
+      return json({ error: 'Sem permissão para convidar usuários.' }, 403, CORS)
+    }
+    if (role === 'owner' && roleRow?.role !== 'platform_admin') {
+      return json({ error: 'Somente o Administrador Andeti pode convidar o dono da Arena.' }, 403, CORS)
     }
 
     const normalizedEmail = email.toLowerCase().trim()
