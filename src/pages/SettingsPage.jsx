@@ -56,7 +56,11 @@ function UsersSection() {
       `)
       .order('role')
     if (loadErr) setError(loadErr.message)
-    setUsers(data || [])
+    setUsers(
+      isPlatformAdmin
+        ? (data || [])
+        : (data || []).filter(userRole => userRole.role !== 'platform_admin')
+    )
     setLoading(false)
   }
 
