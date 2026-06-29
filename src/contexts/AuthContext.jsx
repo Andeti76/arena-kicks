@@ -47,10 +47,12 @@ export function AuthProvider({ children }) {
 
   function startHeartbeat(userId) {
     clearInterval(heartbeatRef.current)
-    const beat = () =>
-      supabase.from('profiles')
+    const beat = async () => {
+      const { error } = await supabase.from('profiles')
         .update({ last_seen_at: new Date().toISOString() })
         .eq('id', userId)
+      if (error) console.warn('[heartbeat]', error.message)
+    }
     beat()
     heartbeatRef.current = setInterval(beat, 2 * 60 * 1000)
   }
