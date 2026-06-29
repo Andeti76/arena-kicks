@@ -22,6 +22,7 @@ export default function SettingsPage() {
       <div className="space-y-6">
         <UsersSection />
         <InviteSection />
+        <AboutSection />
       </div>
     </div>
   )
@@ -487,6 +488,25 @@ function InviteSection() {
           </div>
         </div>
       )}
+    </Section>
+  )
+}
+
+function AboutSection() {
+  return (
+    <Section title="Sobre">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-gray-800">Arena Kicks — Gestão Financeira</p>
+          <p className="text-xs text-gray-400 mt-0.5">Desenvolvido por Andeti · Jacareí, SP</p>
+        </div>
+        <span
+          className="text-xs font-mono px-2.5 py-1 rounded-full border"
+          style={{ background: 'rgba(11,34,56,0.05)', borderColor: 'rgba(11,34,56,0.12)', color: '#0B2238' }}
+        >
+          v1.0.0
+        </span>
+      </div>
     </Section>
   )
 }
